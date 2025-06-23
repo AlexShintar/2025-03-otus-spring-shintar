@@ -38,8 +38,7 @@ public class BookServiceImpl implements BookService {
     @Transactional(readOnly = true)
     @Override
     public List<BookDto> findAll() {
-        List<Book> books = bookRepository.findAll();
-        return books.stream()
+        return bookRepository.findAll().stream()
                 .map(bookConverter::toDto)
                 .toList();
     }
@@ -47,15 +46,15 @@ public class BookServiceImpl implements BookService {
     @Transactional
     @Override
     public BookDto insert(String title, long authorId, Set<Long> genresIds) {
-        Book book = save(0, title, authorId, genresIds);
-        return bookConverter.toDto(book);
+        Book saved = save(0, title, authorId, genresIds);
+        return bookConverter.toDto(saved);
     }
 
     @Transactional
     @Override
     public BookDto update(long id, String title, long authorId, Set<Long> genresIds) {
-        Book book = save(id, title, authorId, genresIds);
-        return bookConverter.toDto(book);
+        Book updated = save(id, title, authorId, genresIds);
+        return bookConverter.toDto(updated);
     }
 
     @Transactional
@@ -76,7 +75,16 @@ public class BookServiceImpl implements BookService {
             throw new EntityNotFoundException("One or all genres with ids %s not found".formatted(genresIds));
         }
 
-        var book = new Book(id, title, author, genres);
+        Book book;
+        if (id == 0) {
+            book = new Book(0, title, author, genres);
+        } else {
+            book = bookRepository.findById(id)
+                    .orElseThrow(() -> new EntityNotFoundException("Book with id %d not found".formatted(id)));
+            book.setTitle(title);
+            book.setAuthor(author);
+            book.setGenres(genres);
+        }
         return bookRepository.save(book);
     }
 }

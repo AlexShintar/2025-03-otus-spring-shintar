@@ -10,28 +10,40 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.NamedAttributeNode;
+import jakarta.persistence.NamedEntityGraph;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
 import java.util.List;
 
-@Data
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
 @Table(name = "books")
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@ToString(exclude = {"author", "genres"})
+@ToString(onlyExplicitlyIncluded = true)
+@NamedEntityGraph(
+        name = "book:author-genre-entity-graph",
+        attributeNodes = {
+                @NamedAttributeNode("author"),
+                @NamedAttributeNode("genres")
+        }
+)
 public class Book {
     @Id
     @EqualsAndHashCode.Include
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @ToString.Include
     private long id;
 
     @Column(name = "title", nullable = false, unique = true)
@@ -43,7 +55,8 @@ public class Book {
 
     @Fetch(FetchMode.SUBSELECT)
     @ManyToMany(fetch = FetchType.LAZY, targetEntity = Genre.class)
-    @JoinTable(name = "books_genres", joinColumns = @JoinColumn(name = "book_id"),
+    @JoinTable(name = "books_genres",
+            joinColumns = @JoinColumn(name = "book_id"),
             inverseJoinColumns = @JoinColumn(name = "genre_id"))
     private List<Genre> genres;
 }

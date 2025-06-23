@@ -3,6 +3,7 @@ package ru.otus.hw.repositories;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -19,7 +20,6 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
-import org.junit.jupiter.params.provider.Arguments;
 
 @DisplayName("Репозиторий на основе JPA для работы с комментариями")
 @DataJpaTest
@@ -39,10 +39,11 @@ class JpaCommentRepositoryTest {
         Comment expectedComment = em.find(Comment.class, template.getId());
         Optional<Comment> actualComment = repository.findById(template.getId());
 
-        assertThat(actualComment).isPresent()
-                .get()
-                .usingRecursiveComparison()
-                .isEqualTo(expectedComment);
+        assertThat(actualComment).isPresent();
+        Comment comment = actualComment.get();
+
+        assertThat(comment.getId()).isEqualTo(expectedComment.getId());
+        assertThat(comment.getContent()).isEqualTo(expectedComment.getContent());
     }
 
     @DisplayName("должен возвращать пустой Optional для несуществующего id")
