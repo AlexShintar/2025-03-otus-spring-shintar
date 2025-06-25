@@ -8,29 +8,27 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.NamedAttributeNode;
-import jakarta.persistence.NamedEntityGraph;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 
-@Data
+
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
 @Table(name = "comments")
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@ToString(exclude = {"book"})
-@NamedEntityGraph(
-        name = "comments-books-entity-graph",
-        attributeNodes = @NamedAttributeNode("book")
-)
+@ToString(onlyExplicitlyIncluded = true)
 public class Comment {
     @Id
     @EqualsAndHashCode.Include
+    @ToString.Include
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 

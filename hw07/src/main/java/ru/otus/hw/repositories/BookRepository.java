@@ -10,7 +10,7 @@ import java.util.Optional;
 
 public interface BookRepository extends JpaRepository<Book, Long> {
     @NonNull
-    @EntityGraph(value = "book:author-genre-entity-graph")
+    @EntityGraph(value = "book:author-only-entity-graph")
     List<Book> findAll();
 
     @NonNull
