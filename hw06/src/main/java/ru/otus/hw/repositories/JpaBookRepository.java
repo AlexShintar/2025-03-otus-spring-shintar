@@ -18,8 +18,6 @@ import static org.springframework.data.jpa.repository.EntityGraph.EntityGraphTyp
 @Transactional
 public class JpaBookRepository implements BookRepository {
 
-    private static final String GRAPH_NAME = "book:author-genre-entity-graph";
-
     @PersistenceContext
     private EntityManager em;
 
@@ -28,7 +26,7 @@ public class JpaBookRepository implements BookRepository {
         String jpql = "SELECT b FROM Book b WHERE b.id = :id";
         TypedQuery<Book> query = em.createQuery(jpql, Book.class);
 
-        EntityGraph<?> graph = em.getEntityGraph(GRAPH_NAME);
+        EntityGraph<?> graph = em.getEntityGraph("book:author-genre-entity-graph");
         query.setHint(FETCH.getKey(), graph);
 
         query.setParameter("id", id);
@@ -41,7 +39,7 @@ public class JpaBookRepository implements BookRepository {
         String jpql = "SELECT b FROM Book b ORDER BY b.id";
         TypedQuery<Book> query = em.createQuery(jpql, Book.class);
 
-        EntityGraph<?> graph = em.getEntityGraph(GRAPH_NAME);
+        EntityGraph<?> graph = em.getEntityGraph("book:author-only-entity-graph");
         query.setHint(FETCH.getKey(), graph);
 
         return query.getResultList();

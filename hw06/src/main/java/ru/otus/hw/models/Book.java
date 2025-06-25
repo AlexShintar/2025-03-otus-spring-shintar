@@ -39,6 +39,10 @@ import java.util.List;
                 @NamedAttributeNode("genres")
         }
 )
+@NamedEntityGraph(
+        name = "book:author-only-entity-graph",
+        attributeNodes = @NamedAttributeNode("author")
+)
 public class Book {
     @Id
     @EqualsAndHashCode.Include
