@@ -6,6 +6,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import ru.otus.hw.converters.BookConverter;
 import ru.otus.hw.dto.BookDto;
@@ -20,10 +22,12 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @DisplayName("Сервис для работы с книгами")
-@Transactional
+@Transactional(propagation = Propagation.NEVER)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @SpringBootTest
 class BookServiceTest {
 
@@ -60,14 +64,20 @@ class BookServiceTest {
     @DisplayName("должен возвращать все предзагруженные книги")
     @Test
     void shouldReturnAllPreloadedBooks() {
-        List<BookDto> expected = bookRepository.findAll().stream()
-                .map(bookConverter::toDto)
-                .toList();
-
         List<BookDto> actual = bookService.findAll();
         assertThat(actual)
-                .usingRecursiveFieldByFieldElementComparator()
-                .containsExactlyInAnyOrderElementsOf(expected);
+                .hasSize(3)
+                .extracting(
+                        dto -> dto.getId(),
+                        dto -> dto.getTitle(),
+                        dto -> dto.getAuthor().getId(),
+                        dto -> dto.getGenres().size()
+                )
+                .containsExactlyInAnyOrder(
+                        tuple(1L, "BookTitle_1", 1L, 3),
+                        tuple(2L, "BookTitle_2", 2L, 1),
+                        tuple(3L, "BookTitle_3", 3L, 2)
+                );
     }
 
     @DisplayName("должен сохранять новую книгу")
