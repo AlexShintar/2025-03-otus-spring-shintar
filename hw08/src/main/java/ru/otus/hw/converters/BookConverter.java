@@ -15,14 +15,14 @@ public class BookConverter {
     private final GenreConverter genreConverter;
 
     public String bookToString(BookDto bookDto) {
-        var genresString = bookDto.getGenres().stream()
+        var genresString = bookDto.genres().stream()
                 .map(genreConverter::genreToString)
                 .map("{%s}"::formatted)
                 .collect(Collectors.joining(", "));
-        return "Id: %d, title: %s, author: {%s}, genres: [%s]".formatted(
-                bookDto.getId(),
-                bookDto.getTitle(),
-                authorConverter.authorToString(bookDto.getAuthor()),
+        return "Id: %s, title: %s, author: {%s}, genres: [%s]".formatted(
+                bookDto.id(),
+                bookDto.title(),
+                authorConverter.authorToString(bookDto.author()),
                 genresString);
     }
 

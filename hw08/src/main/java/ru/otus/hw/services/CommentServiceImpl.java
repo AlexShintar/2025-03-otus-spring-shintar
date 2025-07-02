@@ -2,7 +2,6 @@ package ru.otus.hw.services;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import ru.otus.hw.converters.CommentConverter;
 import ru.otus.hw.dto.CommentDto;
 import ru.otus.hw.exceptions.EntityNotFoundException;
@@ -24,45 +23,40 @@ public class CommentServiceImpl implements CommentService {
 
     private final CommentConverter commentConverter;
 
-    @Transactional(readOnly = true)
     @Override
-    public Optional<CommentDto> findById(long id) {
+    public Optional<CommentDto> findById(String id) {
         return commentRepository.findById(id)
                 .map(commentConverter::toDto);
     }
 
-    @Transactional(readOnly = true)
     @Override
-    public List<CommentDto> findAllByBookId(long bookId) {
+    public List<CommentDto> findAllByBookId(String bookId) {
         List<Comment> comments = commentRepository.findAllByBookId(bookId);
         return comments.stream()
                 .map(commentConverter::toDto)
                 .toList();
     }
 
-    @Transactional
     @Override
-    public CommentDto insert(String content, long bookId) {
+    public CommentDto insert(String content, String bookId) {
         Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new EntityNotFoundException("Book with id %d not found".formatted(bookId)));
-        Comment comment = new Comment(0, content, book);
+                .orElseThrow(() -> new EntityNotFoundException("Book with id %s not found".formatted(bookId)));
+        Comment comment = new Comment(content, book);
         Comment saved = commentRepository.save(comment);
         return commentConverter.toDto(saved);
     }
 
-    @Transactional
     @Override
-    public CommentDto update(long id, String content) {
+    public CommentDto update(String id, String content) {
         Comment comment = commentRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Comment with id %d not found".formatted(id)));
+                .orElseThrow(() -> new EntityNotFoundException("Comment with id %s not found".formatted(id)));
         comment.setContent(content);
         Comment saved = commentRepository.save(comment);
         return commentConverter.toDto(saved);
     }
 
-    @Transactional
     @Override
-    public void deleteById(long id) {
+    public void deleteById(String id) {
         commentRepository.deleteById(id);
     }
 }

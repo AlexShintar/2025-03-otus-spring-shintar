@@ -2,7 +2,6 @@ package ru.otus.hw.services;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import ru.otus.hw.converters.BookConverter;
 import ru.otus.hw.dto.BookDto;
 import ru.otus.hw.exceptions.EntityNotFoundException;
@@ -11,8 +10,10 @@ import ru.otus.hw.models.Book;
 import ru.otus.hw.models.Genre;
 import ru.otus.hw.repositories.AuthorRepository;
 import ru.otus.hw.repositories.BookRepository;
+import ru.otus.hw.repositories.CommentRepository;
 import ru.otus.hw.repositories.GenreRepository;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -26,16 +27,16 @@ public class BookServiceImpl implements BookService {
 
     private final BookRepository bookRepository;
 
+    private final CommentRepository commentRepository;
+
     private final BookConverter bookConverter;
 
-    @Transactional(readOnly = true)
     @Override
-    public Optional<BookDto> findById(long id) {
+    public Optional<BookDto> findById(String id) {
         return bookRepository.findById(id)
                 .map(bookConverter::toDto);
     }
 
-    @Transactional(readOnly = true)
     @Override
     public List<BookDto> findAll() {
         return bookRepository.findAll().stream()
@@ -43,24 +44,22 @@ public class BookServiceImpl implements BookService {
                 .toList();
     }
 
-    @Transactional
     @Override
-    public BookDto insert(String title, long authorId, Set<Long> genreIds) {
+    public BookDto insert(String title, String authorId, Set<String> genreIds) {
         Author author = fetchAuthor(authorId);
-        List<Genre> genres = fetchGenres(genreIds);
-        Book book = new Book(0, title, author, genres);
+        Set<Genre> genres = fetchGenres(genreIds);
+        Book book = new Book(title, author, genres);
         Book saved = bookRepository.save(book);
         return bookConverter.toDto(saved);
     }
 
-    @Transactional
     @Override
-    public BookDto update(long id, String title, long authorId, Set<Long> genreIds) {
+    public BookDto update(String id, String title, String authorId, Set<String> genreIds) {
         Author author = fetchAuthor(authorId);
-        List<Genre> genres = fetchGenres(genreIds);
+        Set<Genre> genres = fetchGenres(genreIds);
         Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        String.format("Book with id %d not found", id)
+                        String.format("Book with id %s not found", id)
                 ));
         book.setTitle(title);
         book.setAuthor(author);
@@ -69,20 +68,24 @@ public class BookServiceImpl implements BookService {
         return bookConverter.toDto(updated);
     }
 
-    @Transactional
     @Override
-    public void deleteById(long id) {
+    public void deleteById(String id) {
+        bookRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        String.format("Book with id %s not found", id)
+                ));
+        commentRepository.deleteByBookId(id);
         bookRepository.deleteById(id);
     }
 
-    private Author fetchAuthor(long authorId) {
+    private Author fetchAuthor(String authorId) {
         return authorRepository.findById(authorId)
                 .orElseThrow(() ->
-                        new EntityNotFoundException("Author with id %d not found".formatted(authorId))
+                        new EntityNotFoundException("Author with iв %s not found".formatted(authorId))
                 );
     }
 
-    private List<Genre> fetchGenres(Set<Long> genreIds) {
+    private Set<Genre> fetchGenres(Set<String> genreIds) {
         if (genreIds == null || genreIds.isEmpty()) {
             throw new IllegalArgumentException("Genres ids must not be null or empty");
         }
@@ -90,6 +93,6 @@ public class BookServiceImpl implements BookService {
         if (genres.size() != genreIds.size()) {
             throw new EntityNotFoundException("One or more genres with ids %s not found".formatted(genreIds));
         }
-        return genres;
+        return new HashSet<>(genres);
     }
 }

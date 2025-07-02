@@ -1,9 +1,34 @@
 spring:
-  datasource:
-    url: jdbc:h2:mem:testdb
-  liquibase:
-    enabled: true
-    change-log: db.changelog-test.xml
-  sql:
-    init:
-      mode: never
+  data:
+    mongodb:
+      port: 0
+      host: localhost
+      database: test
+
+  shell:
+    interactive:
+      enabled: true
+    noninteractive:
+      enabled: false
+    command:
+      version:
+        enabled: false
+
+de:
+  flapdoodle:
+    mongodb:
+      embedded:
+        version: 4.0.2
+
+mongock:
+  runner-type: "InitializingBean"
+  change-logs-scan-package:
+    - ru.otus.hw.testchangelog
+  mongo-db:
+    write-concern:
+      journal: false
+    read-concern: local
+
+logging:
+  level:
+    ROOT: INFO

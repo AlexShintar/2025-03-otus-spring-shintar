@@ -1,22 +1,30 @@
 spring:
-  datasource:
-    url: jdbc:h2:mem:maindb
-  liquibase:
-    enabled: true
-    change-log: db.changelog-master.xml
-  sql:
-    init:
-      mode: never
-  h2:
-    console:
-      path: /h2-console
-      settings:
-        web-allow-others: true
+  data:
+    mongodb:
+      port: 0
+      host: localhost
+      database: books
+
   shell:
     interactive:
       enabled: true
-  jpa:
-    generate-ddl: false
-    hibernate:
-      ddl-auto: none
-    show-sql: true
+    noninteractive:
+      enabled: false
+    command:
+      version:
+        enabled: false
+
+de:
+  flapdoodle:
+    mongodb:
+      embedded:
+        version: 4.0.2
+
+mongock:
+  runner-type: "InitializingBean"
+  change-logs-scan-package:
+    - ru.otus.hw.mongock
+  mongo-db:
+    write-concern:
+      journal: false
+    read-concern: local
