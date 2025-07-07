@@ -12,7 +12,7 @@ import ru.otus.hw.models.Genre;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,7 +58,7 @@ class JpaGenreRepositoryTest {
     }
 
     private static List<Genre> getDbGenres() {
-        return IntStream.range(1, 7).boxed()
+        return LongStream.range(1, 7).boxed()
                 .map(id -> new Genre(id, "Genre_" + id))
                 .toList();
     }

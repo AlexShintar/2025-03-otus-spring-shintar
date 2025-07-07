@@ -10,7 +10,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import ru.otus.hw.converters.CommentConverter;
-import ru.otus.hw.dto.BookDto;
 import ru.otus.hw.dto.CommentDto;
 import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.models.Comment;
@@ -83,23 +82,6 @@ class CommentServiceTest {
         );
         return map.entrySet().stream()
                 .map(e -> org.junit.jupiter.params.provider.Arguments.arguments(e.getKey(), e.getValue()));
-    }
-
-    @DisplayName("bookId в CommentDto должен ссылаться на существующую книгу")
-    @Test
-    void commentBookIdShouldPointToExistingBook() {
-        List<Long> bookIds = bookService.findAll().stream()
-                .map(BookDto::getId)
-                .toList();
-
-        List<CommentDto> allComments = bookIds.stream()
-                .flatMap(id -> commentService.findAllByBookId(id).stream())
-                .toList();
-
-        assertThat(allComments).isNotEmpty();
-        allComments.forEach(c ->
-                assertThat(c.getBookId()).isIn(bookIds)
-        );
     }
 
     @DisplayName("должен сохранять новый комментарий")

@@ -1,5 +1,6 @@
 package ru.otus.hw.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,9 +9,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CommentDto {
-    private long id;
+    private Long id;
 
+    @NotBlank
     private String content;
-
-    private long bookId;
 }

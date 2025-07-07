@@ -10,7 +10,7 @@ import ru.otus.hw.models.Author;
 
 
 import java.util.List;
-import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,8 +47,8 @@ class JpaAuthorRepositoryTest {
     }
 
     private static List<Author> getDbAuthors() {
-        return IntStream.range(1, 4).boxed()
-                .map(id -> new Author(id, "Author_" + id))
+        return LongStream.range(1, 4).boxed()
+                .map(id -> new Author(id , "Author_" + id))
                 .toList();
     }
 }

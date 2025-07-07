@@ -12,10 +12,10 @@ CREATE TABLE genres (
                         name varchar(255) NOT NULL UNIQUE
 );
 
---changeset ash:2025-06-23-create-books-table
+--changeset ash:2025-07-07-create-books-table
 CREATE TABLE books (
                        id bigserial PRIMARY KEY,
-                       title varchar(255) NOT NULL UNIQUE,
+                       title varchar(255) NOT NULL,
                        author_id bigint REFERENCES authors(id) ON DELETE CASCADE
 );
 

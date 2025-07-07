@@ -52,7 +52,7 @@ class JpaBookRepositoryTest {
     void shouldSaveNewBook() {
         Author author = getDbAuthors().get(0);
         List<Genre> genres = List.of(getDbGenres().get(0), getDbGenres().get(2));
-        Book savedBook = repository.save(new Book(0, "BookTitle_10500", author, genres));
+        Book savedBook = repository.save(new Book(null, "BookTitle_10500", author, genres));
 
         var returnedBook = em.find(Book.class, savedBook.getId());
 

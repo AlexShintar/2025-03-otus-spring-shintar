@@ -2,10 +2,16 @@ package ru.otus.hw.converters;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import ru.otus.hw.dto.AuthorDto;
 import ru.otus.hw.dto.BookDto;
+import ru.otus.hw.dto.BookFormDto;
+import ru.otus.hw.dto.GenreDto;
 import ru.otus.hw.models.Book;
+import ru.otus.hw.models.Genre;
+import ru.otus.hw.services.AuthorService;
+import ru.otus.hw.services.GenreService;
 
-import java.util.stream.Collectors;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Component
@@ -14,17 +20,9 @@ public class BookConverter {
 
     private final GenreConverter genreConverter;
 
-    public String bookToString(BookDto bookDto) {
-        var genresString = bookDto.getGenres().stream()
-                .map(genreConverter::genreToString)
-                .map("{%s}"::formatted)
-                .collect(Collectors.joining(", "));
-        return "Id: %d, title: %s, author: {%s}, genres: [%s]".formatted(
-                bookDto.getId(),
-                bookDto.getTitle(),
-                authorConverter.authorToString(bookDto.getAuthor()),
-                genresString);
-    }
+    private final AuthorService authorService;
+
+    private final GenreService genreService;
 
     public BookDto toDto(Book book) {
         return new BookDto(
@@ -35,5 +33,50 @@ public class BookConverter {
                         .map(genreConverter::toDto)
                         .toList()
         );
+    }
+
+    public Book toEntity(BookDto dto) {
+        return new Book(
+                dto.getId(),
+                dto.getTitle(),
+                authorConverter.toEntity(dto.getAuthor()),
+                dto.getGenres().stream()
+                        .map(genreConverter::toEntity)
+                        .toList()
+        );
+    }
+
+    public Book updateEntity(Book book, BookDto dto) {
+        book.setTitle(dto.getTitle());
+        book.setAuthor(authorConverter.toEntity(dto.getAuthor()));
+        book.getGenres().clear();
+        for (GenreDto gDto : dto.getGenres()) {
+            Genre genre = genreConverter.toEntity(gDto);
+            book.getGenres().add(genre);
+        }
+        return book;
+    }
+
+    public BookFormDto toFormDto(BookDto bookDto) {
+        return new BookFormDto(
+                bookDto.getId(),
+                bookDto.getTitle(),
+                bookDto.getAuthor().getId(),
+                bookDto.getGenres().stream()
+                        .map(GenreDto::getId)
+                        .toList()
+        );
+    }
+
+    public BookDto fromFormDto(BookFormDto form, Long id) {
+        AuthorDto authorDto = authorConverter.toDto(
+                authorService.findById(form.getAuthorId())
+        );
+        List<GenreDto> genreDtos = form.getGenreIds().stream()
+                .distinct()
+                .map(genreService::findById)
+                .map(genreConverter::toDto)
+                .toList();
+        return new BookDto(id, form.getTitle(), authorDto, genreDtos);
     }
 }

@@ -13,7 +13,7 @@ import ru.otus.hw.models.Comment;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,7 +75,7 @@ class JpaCommentRepositoryTest {
     @Test
     void shouldSaveNewComment() {
         Book book = em.find(Book.class, 2L);
-        Comment newComment = new Comment(0, "Test Comment", book);
+        Comment newComment = new Comment(null, "Test Comment", book);
 
         Comment savedComment = repository.save(newComment);
 
@@ -128,7 +128,7 @@ class JpaCommentRepositoryTest {
 
 
     private static Stream<Comment> getDbComments() {
-        return IntStream.rangeClosed(1, 6)
+        return LongStream.rangeClosed(1, 6)
                 .mapToObj(id -> {
                     Comment comment = new Comment();
                     comment.setId(id);
