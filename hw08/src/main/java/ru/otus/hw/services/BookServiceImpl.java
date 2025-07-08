@@ -10,7 +10,6 @@ import ru.otus.hw.models.Book;
 import ru.otus.hw.models.Genre;
 import ru.otus.hw.repositories.AuthorRepository;
 import ru.otus.hw.repositories.BookRepository;
-import ru.otus.hw.repositories.CommentRepository;
 import ru.otus.hw.repositories.GenreRepository;
 
 import java.util.HashSet;
@@ -26,8 +25,6 @@ public class BookServiceImpl implements BookService {
     private final GenreRepository genreRepository;
 
     private final BookRepository bookRepository;
-
-    private final CommentRepository commentRepository;
 
     private final BookConverter bookConverter;
 
@@ -70,11 +67,9 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public void deleteById(String id) {
-        bookRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        String.format("Book with id %s not found", id)
-                ));
-        commentRepository.deleteByBookId(id);
+        if (bookRepository.findById(id).isEmpty()) {
+            return;
+        }
         bookRepository.deleteById(id);
     }
 

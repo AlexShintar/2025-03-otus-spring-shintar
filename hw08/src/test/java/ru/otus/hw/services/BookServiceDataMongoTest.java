@@ -18,6 +18,7 @@ import ru.otus.hw.dto.CommentDto;
 import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.models.Book;
 import ru.otus.hw.models.Genre;
+import ru.otus.hw.mongock.BookCascadeDeleteEventsListener;
 import ru.otus.hw.testchangelog.TestDatabaseChangelog;
 import ru.otus.hw.testutil.TestDataFactory;
 
@@ -41,7 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
         BookConverter.class,
         AuthorConverter.class,
         GenreConverter.class,
-        CommentConverter.class})
+        CommentConverter.class,
+        BookCascadeDeleteEventsListener.class})
 class BookServiceDataMongoTest {
 
     @Autowired
