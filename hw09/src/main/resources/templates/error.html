@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${errorTitle}">Error</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <style>
+        .message-container {
+            margin-top: 40px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container message-container">
+    <h1 th:text="${errorTitle}">Error</h1>
+    <div class="alert alert-danger" th:text="${errorMessage}">
+        An unexpected error occurred.
+    </div>
+    <div class="actions" style="margin-top:20px;">
+        <a th:href="@{/}" class="btn btn-primary">Home</a>
+    </div>
+</div>
+</body>
+</html>
