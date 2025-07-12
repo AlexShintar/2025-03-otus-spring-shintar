@@ -13,7 +13,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import ru.otus.hw.converters.BookConverter;
 import ru.otus.hw.dto.AuthorDto;
-import ru.otus.hw.dto.BookFormDto;
+import ru.otus.hw.dto.BookCreateDto;
+import ru.otus.hw.dto.BookUpdateDto;
 import ru.otus.hw.dto.GenreDto;
 import ru.otus.hw.services.AuthorService;
 import ru.otus.hw.services.BookService;
@@ -37,6 +38,8 @@ public class BookController {
     private static final String MODEL_ATTR_GENRES = "genres";
 
     private static final String MODEL_ATTR_COMMENTS = "comments";
+
+    private static final String MODEL_ATTR_NEW = "isNew";
 
     private static final String VIEW_LIST = "list";
 
@@ -79,31 +82,37 @@ public class BookController {
 
     @GetMapping("/book/new")
     public String newBookForm(Model model) {
-        model.addAttribute(MODEL_ATTR_BOOK, new BookFormDto());
+        model.addAttribute(MODEL_ATTR_BOOK, new BookCreateDto());
+        model.addAttribute(MODEL_ATTR_NEW, true);
         return VIEW_FORM;
     }
 
     @GetMapping("/book/{id}/edit")
     public String editBookForm(@PathVariable long id, Model model) {
         model.addAttribute(MODEL_ATTR_BOOK, bookConverter.toFormDto(bookService.findById(id)));
+        model.addAttribute(MODEL_ATTR_NEW, false);
         return VIEW_FORM;
     }
 
     @PostMapping("/book")
-    public String createBook(@Valid @ModelAttribute(MODEL_ATTR_BOOK) BookFormDto form,
-                             BindingResult bindingResult) {
+    public String createBook(@Valid @ModelAttribute(MODEL_ATTR_BOOK) BookCreateDto form,
+                             BindingResult bindingResult,
+                             Model model) {
         if (bindingResult.hasErrors()) {
+            model.addAttribute(MODEL_ATTR_NEW, true);
             return VIEW_FORM;
         }
-        bookService.insert(bookConverter.fromFormDto(form, null));
+        bookService.insert(bookConverter.fromFormDto(form));
         return REDIRECT_ROOT;
     }
 
     @PutMapping("/book/{id}")
     public String updateBook(@PathVariable long id,
-                             @Valid @ModelAttribute(MODEL_ATTR_BOOK) BookFormDto form,
-                             BindingResult bindingResult) {
+                             @Valid @ModelAttribute(MODEL_ATTR_BOOK) BookUpdateDto form,
+                             BindingResult bindingResult,
+                             Model model) {
         if (bindingResult.hasErrors()) {
+            model.addAttribute(MODEL_ATTR_NEW, false);
             return VIEW_FORM;
         }
         bookService.update(bookConverter.fromFormDto(form, id));

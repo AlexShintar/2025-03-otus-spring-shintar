@@ -10,7 +10,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import ru.otus.hw.converters.BookConverter;
 import ru.otus.hw.dto.AuthorDto;
 import ru.otus.hw.dto.BookDto;
-import ru.otus.hw.dto.BookFormDto;
+import ru.otus.hw.dto.BookUpdateDto;
+import ru.otus.hw.dto.BookCreateDto;
 import ru.otus.hw.dto.CommentDto;
 import ru.otus.hw.dto.GenreDto;
 import ru.otus.hw.services.AuthorService;
@@ -61,7 +62,7 @@ class BookControllerTest {
     private List<GenreDto> genres;
     private List<BookDto> books;
     private BookDto book;
-    private BookFormDto bookForm;
+    private BookUpdateDto bookUpdateForm;
     private List<CommentDto> comments;
 
     @BeforeEach
@@ -83,11 +84,16 @@ class BookControllerTest {
 
         book = new BookDto(1L, "Test Book", authors.get(0), genres);
 
-        bookForm = new BookFormDto();
-        bookForm.setId(1L);
-        bookForm.setTitle("Test Book");
-        bookForm.setAuthorId(1L);
-        bookForm.setGenreIds(List.of(1L, 2L));
+        bookUpdateForm = new BookUpdateDto();
+        bookUpdateForm.setId(1L);
+        bookUpdateForm.setTitle("Test Book");
+        bookUpdateForm.setAuthorId(1L);
+        bookUpdateForm.setGenreIds(List.of(1L, 2L));
+
+        BookCreateDto bookCreateForm = new BookCreateDto();
+        bookCreateForm.setTitle("Test Book");
+        bookCreateForm.setAuthorId(1L);
+        bookCreateForm.setGenreIds(List.of(1L, 2L));
 
         comments = List.of(
                 new CommentDto(1L, "Comment_1"),
@@ -154,14 +160,14 @@ class BookControllerTest {
         when(authorService.findAll()).thenReturn(authors);
         when(genreService.findAll()).thenReturn(genres);
         when(bookService.findById(bookId)).thenReturn(book);
-        when(bookConverter.toFormDto(book)).thenReturn(bookForm);
+        when(bookConverter.toFormDto(book)).thenReturn(bookUpdateForm);
 
         mockMvc.perform(get("/book/{id}/edit", bookId))
                 .andExpect(status().isOk())
                 .andExpect(view().name("edit"))
                 .andExpect(model().attribute("authors", authors))
                 .andExpect(model().attribute("genres", genres))
-                .andExpect(model().attribute("book", bookForm));
+                .andExpect(model().attribute("book", bookUpdateForm));
 
         verify(bookService, times(1)).findById(bookId);
         verify(bookConverter, times(1)).toFormDto(book);
@@ -172,7 +178,7 @@ class BookControllerTest {
     void shouldCreateBookWithValidDataAndRedirectToRoot() throws Exception {
         when(authorService.findAll()).thenReturn(authors);
         when(genreService.findAll()).thenReturn(genres);
-        when(bookConverter.fromFormDto(any(BookFormDto.class), eq(null))).thenReturn(book);
+        when(bookConverter.fromFormDto(any(BookCreateDto.class))).thenReturn(book);
         when(bookService.insert(any(BookDto.class))).thenReturn(book);
 
         mockMvc.perform(post("/book")
@@ -192,7 +198,7 @@ class BookControllerTest {
         when(genreService.findAll()).thenReturn(genres);
 
         mockMvc.perform(post("/book")
-                        .param("title", "")  // Пустое название - валидационная ошибка
+                        .param("title", "")
                         .param("authorId", "1")
                         .param("genreIds", "1", "2"))
                 .andExpect(status().isOk())
@@ -208,7 +214,7 @@ class BookControllerTest {
         long bookId = 1L;
         when(authorService.findAll()).thenReturn(authors);
         when(genreService.findAll()).thenReturn(genres);
-        when(bookConverter.fromFormDto(any(BookFormDto.class), eq(bookId))).thenReturn(book);
+        when(bookConverter.fromFormDto(any(BookUpdateDto.class), eq(bookId))).thenReturn(book);
         when(bookService.update(any(BookDto.class))).thenReturn(book);
 
         mockMvc.perform(put("/book/{id}", bookId)
@@ -227,14 +233,17 @@ class BookControllerTest {
         long bookId = 1L;
         when(authorService.findAll()).thenReturn(authors);
         when(genreService.findAll()).thenReturn(genres);
-
+        bookUpdateForm.setTitle("");
         mockMvc.perform(put("/book/{id}", bookId)
-                        .param("title", "")  // Пустое название - валидационная ошибка
+                        .param("title", "")
                         .param("authorId", "1")
                         .param("genreIds", "1", "2"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("edit"))
-                .andExpect(model().hasErrors());
+                .andExpect(model().hasErrors())
+                .andExpect(model().attribute("authors", authors))
+                .andExpect(model().attribute("genres", genres))
+                .andExpect(model().attribute("book", bookUpdateForm));
 
         verify(bookService, times(0)).update(any(BookDto.class));
     }
@@ -257,14 +266,15 @@ class BookControllerTest {
     void shouldReturnFormWithErrorsWhenCreatingBookWithTitleTooShort() throws Exception {
         when(authorService.findAll()).thenReturn(authors);
         when(genreService.findAll()).thenReturn(genres);
-
         mockMvc.perform(post("/book")
                         .param("title", "A")
                         .param("authorId", "1")
                         .param("genreIds", "1", "2"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("edit"))
-                .andExpect(model().hasErrors());
+                .andExpect(model().hasErrors())
+                .andExpect(model().attribute("authors", authors))
+                .andExpect(model().attribute("genres", genres));
 
         verify(bookService, times(0)).insert(any(BookDto.class));
     }

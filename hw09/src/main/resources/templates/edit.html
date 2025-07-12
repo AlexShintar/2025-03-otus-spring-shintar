@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="*{id == null} ? 'Add Book' : 'Edit Book'">Edit Book</title>
+    <title th:text="${isNew} ? 'Add Book' : 'Edit Book'">Book Form</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
     <style>
         .form-container { margin-top: 20px; }
@@ -14,10 +14,11 @@
 <body>
 <div class="container form-container" th:object="${book}">
 
-    <h4 th:text="*{id == null} ? 'Add Book' : 'Edit Book'">Edit Book</h4>
+    <h4 th:text="${isNew} ? 'Add Book' : 'Edit Book'">Edit Book</h4>
 
-    <form th:action="*{id == null} ? @{/book} : @{/book/{id}(id=*{id})}" method="post">
-        <input type="hidden" name="_method" th:if="*{id != null}" value="put"/>
+    <form th:action="${isNew} ? @{/book} : @{/book/{id}(id=*{id})}" method="post">
+
+        <input type="hidden" name="_method" th:if="!${isNew}" value="put"/>
 
         <div class="form-group">
             <label for="title">Title</label>
@@ -37,26 +38,31 @@
             <select id="author"
                     th:field="*{authorId}"
                     class="form-control">
+                <option value="">Select author</option>
                 <option th:each="a : ${authors}"
                         th:value="${a.id}"
                         th:text="${a.fullName}">
                 </option>
             </select>
+            <div class="text-danger"
+                 th:if="${#fields.hasErrors('authorId')}"
+                 th:errors="*{authorId}">
+            </div>
         </div>
 
         <div class="form-group">
             <label>Genres</label>
             <div id="genres-wrapper">
                 <div class="genre-row"
-                     th:each="g, iter : ${book.genreIds != null and !#lists.isEmpty(book.genreIds) ? book.genreIds : {null}}">
+                     th:each="g, iter : ${book.genreIds != null && !#lists.isEmpty(book.genreIds) ? book.genreIds : {null}}">
                     <select th:id="'genre-' + ${iter.index}"
                             name="genreIds"
                             class="form-control genre-select">
+                        <option value="">Select genre</option>
                         <option th:each="opt : ${genres}"
                                 th:value="${opt.id}"
                                 th:text="${opt.name}"
                                 th:selected="${g != null and opt.id == g}">
-                            Genre
                         </option>
                     </select>
                     <button type="button"
@@ -70,11 +76,15 @@
                     class="btn btn-xs btn-default">
                 Add Genre
             </button>
+            <div class="text-danger"
+                 th:if="${#fields.hasErrors('genreIds')}"
+                 th:errors="*{genreIds}">
+            </div>
         </div>
 
         <button type="submit"
                 class="btn btn-success"
-                th:text="*{id == null} ? 'Add' : 'Save'">
+                th:text="${isNew} ? 'Add' : 'Save'">
             Save
         </button>
         <button type="button"

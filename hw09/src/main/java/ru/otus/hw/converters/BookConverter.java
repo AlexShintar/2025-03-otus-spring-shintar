@@ -3,8 +3,9 @@ package ru.otus.hw.converters;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import ru.otus.hw.dto.AuthorDto;
+import ru.otus.hw.dto.BookCreateDto;
 import ru.otus.hw.dto.BookDto;
-import ru.otus.hw.dto.BookFormDto;
+import ru.otus.hw.dto.BookUpdateDto;
 import ru.otus.hw.dto.GenreDto;
 import ru.otus.hw.models.Book;
 import ru.otus.hw.models.Genre;
@@ -57,8 +58,8 @@ public class BookConverter {
         return book;
     }
 
-    public BookFormDto toFormDto(BookDto bookDto) {
-        return new BookFormDto(
+    public BookUpdateDto toFormDto(BookDto bookDto) {
+        return new BookUpdateDto(
                 bookDto.getId(),
                 bookDto.getTitle(),
                 bookDto.getAuthor().getId(),
@@ -68,7 +69,7 @@ public class BookConverter {
         );
     }
 
-    public BookDto fromFormDto(BookFormDto form, Long id) {
+    public BookDto fromFormDto(BookUpdateDto form, Long id) {
         AuthorDto authorDto = authorConverter.toDto(
                 authorService.findById(form.getAuthorId())
         );
@@ -78,5 +79,18 @@ public class BookConverter {
                 .map(genreConverter::toDto)
                 .toList();
         return new BookDto(id, form.getTitle(), authorDto, genreDtos);
+    }
+
+    public BookDto fromFormDto(BookCreateDto form) {
+        AuthorDto authorDto = authorConverter.toDto(
+                authorService.findById(form.getAuthorId())
+        );
+        List<GenreDto> genreDtos = form.getGenreIds().stream()
+                .distinct()
+                .map(genreService::findById)
+                .map(genreConverter::toDto)
+                .toList();
+        // id = null, потому что книга новая
+        return new BookDto(null, form.getTitle(), authorDto, genreDtos);
     }
 }
