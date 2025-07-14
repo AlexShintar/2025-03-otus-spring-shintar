@@ -1,0 +1,30 @@
+spring:
+  data:
+    mongodb:
+      port: 0
+      host: localhost
+      database: test
+
+  shell:
+    interactive:
+      enabled: true
+    noninteractive:
+      enabled: false
+    command:
+      version:
+        enabled: false
+
+de:
+  flapdoodle:
+    mongodb:
+      embedded:
+        version: 8.0.5
+
+mongock:
+  runner-type: "InitializingBean"
+  change-logs-scan-package:
+    - ru.otus.hw.testchangelog
+  mongo-db:
+    write-concern:
+      journal: false
+    read-concern: local
