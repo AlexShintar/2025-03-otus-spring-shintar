@@ -7,3 +7,7 @@ spring:
   sql:
     init:
       mode: never
+app:
+  security:
+    remember-me:
+      key: "${REMEMBER_ME_KEY:my-super-secret-rememberme-key}"

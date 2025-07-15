@@ -4,14 +4,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.otus.hw.converters.BookConverter;
 import ru.otus.hw.dto.AuthorDto;
+import ru.otus.hw.dto.BookCreateDto;
 import ru.otus.hw.dto.BookDto;
 import ru.otus.hw.dto.BookUpdateDto;
-import ru.otus.hw.dto.BookCreateDto;
 import ru.otus.hw.dto.CommentDto;
 import ru.otus.hw.dto.GenreDto;
 import ru.otus.hw.services.AuthorService;
@@ -37,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @DisplayName("Контроллер для работы с книгами")
-@WebMvcTest(BookController.class)
+@WebMvcTest(controllers = BookController.class, excludeAutoConfiguration = SecurityAutoConfiguration.class)
 class BookControllerTest {
 
     @Autowired

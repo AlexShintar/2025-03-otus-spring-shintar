@@ -34,3 +34,8 @@ INSERT INTO comments (comment_content, book_id) VALUES
                                                     ('Comment_1_for_BookTitle_2',2),
                                                     ('Comment_2_for_BookTitle_2',2),
                                                     ('Comment_1_for_BookTitle_3',3);
+
+--changeset ash:2025-07-15-insert-users
+INSERT INTO users (user_name, user_password) VALUES
+                                           ('user',  '$2a$12$R8t9stj5Ozg87sIWWfO58.5VV.iOnLkAZTTIwIsn4LbLHLrtyiSay'),
+                                           ('admin', '$2a$12$XC512r3lxHhXLo72C06s0e5OLLGuiGT59F0Qx3VIuYNB7y.oss4QW');

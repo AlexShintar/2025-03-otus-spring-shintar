@@ -38,3 +38,10 @@ CREATE TABLE comments (
                           comment_content varchar(1000) NOT NULL,
                           book_id bigint REFERENCES books(id) ON DELETE CASCADE
 );
+
+--changeset ash:2025-07-15-create-users-table
+CREATE TABLE users (
+                          id bigserial PRIMARY KEY,
+                          user_name varchar(255) NOT NULL UNIQUE,
+                          user_password varchar(255) NOT NULL
+);

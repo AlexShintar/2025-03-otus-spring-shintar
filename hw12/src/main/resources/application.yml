@@ -17,6 +17,12 @@ spring:
       filter:
         enabled: true
 
+app:
+  security:
+    remember-me:
+      key: "${REMEMBER_ME_KEY:my-super-secret-rememberme-key}"
+      validity-seconds: 600
+
 logging:
   level:
     ROOT: ERROR
