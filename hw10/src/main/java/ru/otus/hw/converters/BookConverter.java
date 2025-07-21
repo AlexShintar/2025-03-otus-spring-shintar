@@ -58,17 +58,6 @@ public class BookConverter {
         return book;
     }
 
-    public BookUpdateDto toFormDto(BookDto bookDto) {
-        return new BookUpdateDto(
-                bookDto.getId(),
-                bookDto.getTitle(),
-                bookDto.getAuthor().getId(),
-                bookDto.getGenres().stream()
-                        .map(GenreDto::getId)
-                        .toList()
-        );
-    }
-
     public BookDto fromFormDto(BookUpdateDto form, Long id) {
         AuthorDto authorDto = authorConverter.toDto(
                 authorService.findById(form.getAuthorId())
@@ -90,7 +79,6 @@ public class BookConverter {
                 .map(genreService::findById)
                 .map(genreConverter::toDto)
                 .toList();
-        // id = null, потому что книга новая
         return new BookDto(null, form.getTitle(), authorDto, genreDtos);
     }
 }

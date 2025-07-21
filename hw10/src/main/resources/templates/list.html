@@ -1,4 +1,5 @@
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,7 +9,6 @@
 <body>
 <div class="container">
     <h2>Books</h2>
-
     <table class="table table-hover">
         <thead>
         <tr>
@@ -17,26 +17,42 @@
             <th>Title</th>
         </tr>
         </thead>
-        <tbody>
-        <tr th:each="book : ${bookList}"
-            th:onclick="|window.location.href='@{/book/{id}(id=${book.id})}'|"
-            style="cursor: pointer;">
-
-            <td th:text="${book.id}">1</td>
-
-            <td th:text="${book.author.fullName}">Author_1</td>
-
-            <td>
-                <div th:text="${book.title}">BookTitle_1</div>
-                <small class="text-info"
-                       th:each="g, stat : ${book.genres}"
-                       th:text="${g.name + (stat.last ? '' : ', ')}">Genre_1</small>
-            </td>
-        </tr>
+        <tbody id="book-table-body">
         </tbody>
     </table>
-
-    <a th:href="@{/book/new}" class="btn btn-success btn-sm">New book</a>
+    <a href="edit.html" class="btn btn-success btn-sm">New book</a>
 </div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch('/api/v1/book')
+            .then(response => {
+                if (!response.ok) throw new Error("Failed to load books");
+                return response.json();
+            })
+            .then(books => {
+                const tableBody = document.getElementById('book-table-body');
+                books.forEach(book => {
+                    const row = document.createElement('tr');
+                    row.style.cursor = 'pointer';
+                    row.onclick = () => {
+                        window.location.href = `detail.html?id=${book.id}`;
+                    };
+                    row.innerHTML = `
+                    <td>${book.id}</td>
+                    <td>${book.author.fullName}</td>
+                    <td>
+                        <div>${book.title}</div>
+                        <small class="text-info">${(book.genres || []).map(g => g.name).join(', ')}</small>
+                    </td>
+                `;
+                    tableBody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Failed to load books.");
+            });
+    });
+</script>
 </body>
 </html>

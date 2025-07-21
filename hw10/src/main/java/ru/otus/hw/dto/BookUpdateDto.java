@@ -13,9 +13,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BookUpdateDto {
-    @NotNull(message = "Book id is required")
-    private Long id;
-
     @NotBlank(message = "Please provide a title")
     @Size(min = 2, max = 255, message = "Title must be between {min} and {max} characters")
     private String title;

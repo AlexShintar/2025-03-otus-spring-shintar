@@ -36,9 +36,6 @@ class CommentServiceTest {
     private CommentRepository commentRepository;
 
     @Autowired
-    private BookService bookService;
-
-    @Autowired
     private CommentConverter commentConverter;
 
     @DisplayName("должен возвращать комментарий по id")
@@ -97,7 +94,7 @@ class CommentServiceTest {
     @DisplayName("должен обновлять существующий комментарий")
     @Test
     void shouldUpdateExistingComment() {
-        CommentDto updated = commentService.update(1L, "Modified content");
+        CommentDto updated = commentService.update(1L, 1L, "Modified content");
 
         Comment entity = commentRepository.findById(1L).orElseThrow();
         CommentDto expected = commentConverter.toDto(entity);
@@ -111,7 +108,7 @@ class CommentServiceTest {
     @Test
     void shouldDeleteCommentById() {
         assertThat(commentRepository.findById(3L)).isPresent();
-        commentService.deleteById(3L);
+        commentService.deleteById(3L, 1L);
         assertThat(commentRepository.findById(3L)).isEmpty();
     }
 
@@ -126,6 +123,6 @@ class CommentServiceTest {
     @Test
     void updateNonExistingThrows() {
         assertThrows(EntityNotFoundException.class,
-                () -> commentService.update(999L, "X"));
+                () -> commentService.update(999L, 1L, "X"));
     }
 }

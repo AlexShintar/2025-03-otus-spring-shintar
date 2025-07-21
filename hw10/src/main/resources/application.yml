@@ -20,3 +20,4 @@ spring:
 logging:
   level:
     ROOT: ERROR
+    org.apache.catalina.connector.ClientAbortException: OFF

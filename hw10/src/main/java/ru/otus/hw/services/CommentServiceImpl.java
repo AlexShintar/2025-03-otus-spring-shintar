@@ -52,17 +52,32 @@ public class CommentServiceImpl implements CommentService {
 
     @Transactional
     @Override
-    public CommentDto update(long id, String content) {
+    public CommentDto update(long id, long bookId, String content) {
         Comment comment = commentRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Comment with id %d not found".formatted(id)));
         comment.setContent(content);
+
+        if (!comment.getBook().getId().equals(bookId)) {
+            throw new IllegalArgumentException("Comment with id %d does not belong to book with id %d"
+                    .formatted(id, bookId));
+        }
+
         Comment saved = commentRepository.save(comment);
         return commentConverter.toDto(saved);
     }
 
     @Transactional
     @Override
-    public void deleteById(long id) {
+    public void deleteById(long id, long bookId) {
+        Optional<Comment> commentOpt = commentRepository.findById(id);
+        if (commentOpt.isEmpty()) {
+            return;
+        }
+        Comment comment = commentOpt.get();
+        if (!comment.getBook().getId().equals(bookId)) {
+            throw new IllegalArgumentException("Comment with id %d does not belong to book with id %d"
+                    .formatted(id, bookId));
+        }
         commentRepository.deleteById(id);
     }
 }

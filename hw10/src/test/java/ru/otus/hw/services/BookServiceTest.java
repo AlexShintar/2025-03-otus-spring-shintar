@@ -142,7 +142,6 @@ class BookServiceTest {
     @DisplayName("должен обновлять существующую книгу")
     @Test
     void shouldUpdateExistingBook() {
-        // Получаем Author и Genre как сущности, затем конвертируем в DTO
         Author authorEntity = authorService.findById(1L);
         AuthorDto author = authorConverter.toDto(authorEntity);
 
@@ -200,7 +199,6 @@ class BookServiceTest {
     @DisplayName("должен удалять книгу по id")
     @Test
     void shouldDeleteBookById() {
-        // убедимся, что книга существует
         assertThat(bookService.findById(3L)).isNotNull();
 
         bookService.deleteById(3L);
@@ -229,7 +227,6 @@ class BookServiceTest {
     @DisplayName("должен корректно обрабатывать пустой список книг")
     @Test
     void shouldHandleEmptyBookList() {
-        // Удаляем все книги
         bookService.deleteById(1L);
         bookService.deleteById(2L);
         bookService.deleteById(3L);
@@ -241,7 +238,6 @@ class BookServiceTest {
     @DisplayName("должен сохранять книгу с минимальными данными")
     @Test
     void shouldInsertBookWithMinimalData() {
-        // Получаем Author и Genre как сущности, затем конвертируем в DTO
         Author authorEntity = authorService.findById(1L);
         AuthorDto author = authorConverter.toDto(authorEntity);
 
