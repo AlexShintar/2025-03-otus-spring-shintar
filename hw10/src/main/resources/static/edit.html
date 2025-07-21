@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title id="form-title">Book Form</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <style>
+        .form-container { margin-top: 20px; }
+        .genre-row { display: flex; align-items: center; margin-bottom: 5px; }
+        .genre-row select { flex: 1; margin-right: 8px; }
+    </style>
+</head>
+<body>
+<div class="container form-container">
+    <h4 id="form-header">Book Form</h4>
+    <form id="book-form">
+        <input type="hidden" id="book-id" />
+        <div class="form-group">
+            <label for="title">Title</label>
+            <input type="text" id="title" class="form-control" required />
+            <div class="text-danger" id="title-error"></div>
+        </div>
+        <div class="form-group">
+            <label for="author">Author</label>
+            <select id="author" class="form-control" required>
+                <option value="">Select author</option>
+            </select>
+            <div class="text-danger" id="author-error"></div>
+        </div>
+        <div class="form-group">
+            <label>Genres</label>
+            <div id="genres-wrapper"></div>
+            <button type="button" id="add-genre-btn" class="btn btn-xs btn-default">Add Genre</button>
+            <div class="text-danger" id="genre-error"></div>
+        </div>
+        <button type="submit" class="btn btn-success" id="save-btn">Save</button>
+        <button type="button" class="btn btn-default" id="cancel-btn">Cancel</button>
+        <a href="/" class="btn btn-primary">Home</a>
+    </form>
+</div>
+
+<script>
+    "use strict";
+    const params = new URLSearchParams(window.location.search);
+    const bookId = params.get('id');
+    let authors = [], genres = [];
+
+    const titleError = document.getElementById('title-error');
+    const authorError = document.getElementById('author-error');
+    const genreError = document.getElementById('genre-error');
+    const formTitle = document.getElementById('form-title');
+    const formHeader = document.getElementById('form-header');
+    const bookForm = document.getElementById('book-form');
+    const genresWrapper = document.getElementById('genres-wrapper');
+    const addGenreBtn = document.getElementById('add-genre-btn');
+
+    function clearErrors() {
+        titleError.textContent = '';
+        authorError.textContent = '';
+        genreError.textContent = '';
+    }
+
+    function loadAuthorsAndGenres(selectedAuthorId, selectedGenreIds) {
+        fetch('/api/v1/author')
+            .then(res => res.json())
+            .then(data => {
+                authors = data;
+                const authorSelect = document.getElementById('author');
+                authorSelect.innerHTML = '<option value="">Select author</option>' +
+                    authors.map(a =>
+                        `<option value="${a.id}">${a.fullName}</option>`
+                    ).join('');
+                if (selectedAuthorId) authorSelect.value = selectedAuthorId;
+            })
+            .catch(() => alert('Failed to load authors'));
+
+        fetch('/api/v1/genre')
+            .then(res => res.json())
+            .then(data => {
+                genres = data;
+                renderGenres(selectedGenreIds || []);
+            })
+            .catch(() => alert('Failed to load genres'));
+    }
+
+    function renderGenres(selectedGenreIds) {
+        if (!selectedGenreIds.length) selectedGenreIds = [null];
+        genresWrapper.innerHTML = selectedGenreIds.map(gid => `
+        <div class="genre-row">
+            <select class="form-control genre-select" required>
+                <option value="">Select genre</option>
+                ${genres.map(g => `<option value="${g.id}"${g.id == gid ? ' selected' : ''}>${g.name}</option>`).join("")}
+            </select>
+            <button type="button" class="btn btn-xs btn-danger remove-genre-btn">Remove</button>
+        </div>
+    `).join('');
+        updateGenreControls();
+    }
+
+    function updateGenreControls() {
+        const rows = document.querySelectorAll('.genre-row');
+        rows.forEach(row => {
+            row.querySelector('.remove-genre-btn').disabled = rows.length <= 1;
+        });
+        addGenreBtn.disabled = rows.length >= 5;
+    }
+
+    function getSelectedGenreIds() {
+        return Array.from(document.querySelectorAll('.genre-select'))
+            .map(select => select.value)
+            .filter(val => val);
+    }
+
+    if (bookId) {
+        formTitle.innerText = 'Edit Book';
+        formHeader.innerText = 'Edit Book';
+        fetch(`/api/v1/book/${bookId}`)
+            .then(res => res.json())
+            .then(book => {
+                document.getElementById('book-id').value = book.id;
+                document.getElementById('title').value = book.title;
+                loadAuthorsAndGenres(book.author.id, book.genres.map(g => g.id));
+            })
+            .catch(() => alert('Failed to load book data'));
+    } else {
+        formTitle.innerText = 'Add Book';
+        formHeader.innerText = 'Add Book';
+        loadAuthorsAndGenres();
+    }
+
+    addGenreBtn.onclick = function() {
+        const currentGenres = getSelectedGenreIds();
+        if (currentGenres.length < 5) {
+            renderGenres([...currentGenres, null]);
+        }
+    };
+
+    genresWrapper.onclick = function(e) {
+        if (e.target.matches('.remove-genre-btn')) {
+            const idx = Array.from(this.children).indexOf(e.target.closest('.genre-row'));
+            const ids = getSelectedGenreIds();
+            ids.splice(idx, 1);
+            renderGenres(ids.length ? ids : [null]);
+        }
+    };
+
+    document.getElementById('cancel-btn').onclick = function() {
+        history.back();
+    };
+
+    bookForm.onsubmit = function(e) {
+        e.preventDefault();
+        clearErrors();
+        const title = document.getElementById('title').value.trim();
+        const authorId = document.getElementById('author').value;
+        const genreIds = getSelectedGenreIds();
+
+        let valid = true;
+        if (!title) {
+            titleError.textContent = 'Title required';
+            valid = false;
+        } else if (title.length < 2) {
+            titleError.textContent = 'Title must be at least 2 characters';
+            valid = false;
+        }
+
+        authorError.textContent = authorId ? '' : 'Author required';
+        genreError.textContent = genreIds.length ? '' : 'At least one genre required';
+        if (!authorId || !genreIds.length) valid = false;
+        if (!valid) return;
+
+        const dto = { title, authorId, genreIds };
+        const method = bookId ? 'PUT' : 'POST';
+        const url = bookId ? `/api/v1/book/${bookId}` : '/api/v1/book';
+
+        fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dto)
+        })
+            .then(res => {
+                if (res.ok) {
+                    window.location.href = "/";
+                } else {
+                    return res.json().then(data => {
+                        clearErrors();
+                        if (data.errors && Array.isArray(data.errors)) {
+                            data.errors.forEach(err => {
+                                if (err.field === 'title') titleError.textContent = err.message;
+                                if (err.field === 'authorId') authorError.textContent = err.message;
+                                if (err.field === 'genreIds') genreError.textContent = err.message;
+                            });
+                        } else if (data.message) {
+                            alert('Error: ' + data.message);
+                        } else {
+                            alert('Unknown error');
+                        }
+                    });
+                }
+            })
+            .catch(() => alert('Request failed'));
+    };
+</script>
+</body>
+</html>

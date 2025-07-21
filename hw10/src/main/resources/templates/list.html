@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Library</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container">
+    <h2>Books</h2>
+    <table class="table table-hover">
+        <thead>
+        <tr>
+            <th>#</th>
+            <th>Author</th>
+            <th>Title</th>
+        </tr>
+        </thead>
+        <tbody id="book-table-body">
+        </tbody>
+    </table>
+    <a href="edit.html" class="btn btn-success btn-sm">New book</a>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch('/api/v1/book')
+            .then(response => {
+                if (!response.ok) throw new Error("Failed to load books");
+                return response.json();
+            })
+            .then(books => {
+                const tableBody = document.getElementById('book-table-body');
+                books.forEach(book => {
+                    const row = document.createElement('tr');
+                    row.style.cursor = 'pointer';
+                    row.onclick = () => {
+                        window.location.href = `detail.html?id=${book.id}`;
+                    };
+                    row.innerHTML = `
+                    <td>${book.id}</td>
+                    <td>${book.author.fullName}</td>
+                    <td>
+                        <div>${book.title}</div>
+                        <small class="text-info">${(book.genres || []).map(g => g.name).join(', ')}</small>
+                    </td>
+                `;
+                    tableBody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Failed to load books.");
+            });
+    });
+</script>
+</body>
+</html>
