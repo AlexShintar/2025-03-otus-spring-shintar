@@ -8,7 +8,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.http.MediaType;
-import ru.otus.hw.converters.BookConverter;
 import ru.otus.hw.dto.AuthorDto;
 import ru.otus.hw.dto.BookCreateDto;
 import ru.otus.hw.dto.BookDto;
@@ -40,9 +39,6 @@ class BookRestControllerTest {
 
     @MockitoBean
     private BookService bookService;
-
-    @MockitoBean
-    private BookConverter bookConverter;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -82,14 +78,10 @@ class BookRestControllerTest {
     @DisplayName("должен создавать книгу с валидными данными")
     @Test
     void shouldCreateBookWithValidData() throws Exception {
-        BookCreateDto createDto = new BookCreateDto();
-        createDto.setTitle("Test Book");
-        createDto.setAuthorId(1L);
-        createDto.setGenreIds(List.of(1L));
+        BookCreateDto createDto = new BookCreateDto("Test Book", 1L, List.of(1L));
         BookDto book = new BookDto(1L, "Test Book", author, genres);
 
-        when(bookConverter.fromFormDto(any(BookCreateDto.class))).thenReturn(book);
-        when(bookService.insert(any(BookDto.class))).thenReturn(book);
+        when(bookService.insert(any(BookCreateDto.class))).thenReturn(book);
 
         mockMvc.perform(post("/api/v1/book")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -103,15 +95,10 @@ class BookRestControllerTest {
     @DisplayName("должен обновлять книгу с валидными данными")
     @Test
     void shouldUpdateBookWithValidData() throws Exception {
-        BookUpdateDto updateDto = new BookUpdateDto();
-        updateDto.setTitle("Updated Book");
-        updateDto.setAuthorId(1L);
-        updateDto.setGenreIds(List.of(1L));
-
+        BookUpdateDto updateDto = new BookUpdateDto("Updated Book", 1L, List.of(1L));
         BookDto book = new BookDto(1L, "Updated Book", author, genres);
 
-        when(bookConverter.fromFormDto(any(BookUpdateDto.class), eq(1L))).thenReturn(book);
-        when(bookService.update(any(BookDto.class))).thenReturn(book);
+        when(bookService.update(eq(updateDto), eq(1L))).thenReturn(book);
 
         mockMvc.perform(put("/api/v1/book/{id}", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
