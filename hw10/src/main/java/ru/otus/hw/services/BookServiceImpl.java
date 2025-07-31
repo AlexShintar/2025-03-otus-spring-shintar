@@ -4,26 +4,30 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.otus.hw.dto.BookCreateDto;
+import ru.otus.hw.dto.BookDto;
 import ru.otus.hw.dto.BookUpdateDto;
+import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.mapper.AuthorMapper;
 import ru.otus.hw.mapper.BookMapper;
-import ru.otus.hw.dto.BookDto;
-import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.mapper.GenreMapper;
 import ru.otus.hw.models.Author;
 import ru.otus.hw.models.Book;
+import ru.otus.hw.models.Genre;
+import ru.otus.hw.repositories.AuthorRepository;
 import ru.otus.hw.repositories.BookRepository;
+import ru.otus.hw.repositories.GenreRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 @Service
 public class BookServiceImpl implements BookService {
     private final BookRepository bookRepository;
 
-    private final AuthorService authorService;
+    private final AuthorRepository authorRepository;
 
-    private final GenreService genreService;
+    private final GenreRepository genreRepository;
 
     private final BookMapper bookMapper;
 
@@ -34,10 +38,7 @@ public class BookServiceImpl implements BookService {
     @Transactional(readOnly = true)
     @Override
     public BookDto findById(long id) {
-        Book book = bookRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        String.format("Book with id %d not found", id)
-                ));
+        Book book = findByIdOrThrow(bookRepository.findById(id), Book.class, id);
         return bookMapper.toDto(book);
     }
 
@@ -52,10 +53,11 @@ public class BookServiceImpl implements BookService {
     @Transactional
     @Override
     public BookDto insert(BookCreateDto form) {
-        Author author = authorService.findById(form.authorId());
-        var genres = form.genreIds().stream()
+        Author author = findByIdOrThrow(authorRepository.findById(form.authorId()), Author.class, form.authorId());
+
+        List<Genre> genres = form.genreIds().stream()
                 .distinct()
-                .map(genreService::findById)
+                .map(id -> findByIdOrThrow(genreRepository.findById(id), Genre.class, id))
                 .toList();
 
         Book book = bookMapper.toEntity(
@@ -71,14 +73,12 @@ public class BookServiceImpl implements BookService {
     @Transactional
     @Override
     public BookDto update(BookUpdateDto form, long id) {
-        Book book = bookRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        String.format("Book with id %d not found", id)
-                ));
-        Author author = authorService.findById(form.authorId());
-        var genres = form.genreIds().stream()
+        Book book = findByIdOrThrow(bookRepository.findById(id), Book.class, id);
+        Author author = findByIdOrThrow(authorRepository.findById(form.authorId()), Author.class, form.authorId());
+
+        List<Genre> genres = form.genreIds().stream()
                 .distinct()
-                .map(genreService::findById)
+                .map(gid -> findByIdOrThrow(genreRepository.findById(gid), Genre.class, gid))
                 .toList();
 
         book.setTitle(form.title());
@@ -94,5 +94,10 @@ public class BookServiceImpl implements BookService {
     @Override
     public void deleteById(long id) {
         bookRepository.deleteById(id);
+    }
+
+    private <T> T findByIdOrThrow(Optional<T> optional, Class<?> entityClass, long id) {
+        return optional.orElseThrow(() ->
+                new EntityNotFoundException(entityClass.getSimpleName() + " not found: " + id));
     }
 }

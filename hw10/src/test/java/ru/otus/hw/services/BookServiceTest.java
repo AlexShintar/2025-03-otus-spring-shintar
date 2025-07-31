@@ -75,7 +75,7 @@ class BookServiceTest {
                 () -> bookService.findById(nonExistingId));
 
         assertThat(exception.getMessage())
-                .contains("Book with id " + nonExistingId + " not found");
+                .contains("Book not found: " + nonExistingId);
     }
 
     private static Stream<Long> bookIds() {
@@ -165,7 +165,7 @@ class BookServiceTest {
                 () -> bookService.update(form, 999L));
 
         assertThat(exception.getMessage())
-                .contains("Book with id 999 not found");
+                .contains("Book not found: 999");
     }
 
     @DisplayName("должен удалять книгу по id")

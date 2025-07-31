@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.ModelAndView;
 import ru.otus.hw.dto.ValidationErrorResponse;
 import ru.otus.hw.exceptions.EntityNotFoundException;
 
@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ValidationErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
         log.error("Validation failed: {}", ex.getMessage(), ex);
@@ -39,13 +38,18 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<?> handleAny(Exception ex, HttpServletRequest request) {
+    public Object handleAny(Exception ex, HttpServletRequest request) {
+        String errorId = UUID.randomUUID().toString();
+        log.error("Internal error at {}. ErrorId={}", request.getRequestURI(), errorId, ex);
+
         if (isHtmlRequest(request)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Page not found", ex);
+            ModelAndView modelAndView = new ModelAndView("error");
+            modelAndView.setStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+            modelAndView.addObject("message", "Something went wrong");
+            modelAndView.addObject("errorId", errorId);
+            return modelAndView;
         }
 
-        String errorId = UUID.randomUUID().toString();
-        log.error("Internal error occurred. ErrorId={}", errorId, ex);
         return ResponseEntity.status(500)
                 .body(Map.of(
                         "message", "Internal server error. Please try again later.",
