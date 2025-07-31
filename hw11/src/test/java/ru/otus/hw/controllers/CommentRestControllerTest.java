@@ -60,8 +60,7 @@ class CommentRestControllerTest {
     @DisplayName("должен создавать комментарий с валидными данными")
     @Test
     void shouldCreateCommentWithValidData() throws Exception {
-        CommentDto commentDto = new CommentDto();
-        commentDto.setContent("Test comment");
+        CommentDto commentDto = new CommentDto(null, "Test comment");
         CommentDto created = new CommentDto(1L, "Test comment");
 
         when(commentService.insert(eq("Test comment"), eq(1L))).thenReturn(created);
@@ -80,8 +79,7 @@ class CommentRestControllerTest {
     @DisplayName("должен обновлять комментарий с валидными данными")
     @Test
     void shouldUpdateCommentWithValidData() throws Exception {
-        CommentDto commentDto = new CommentDto();
-        commentDto.setContent("Updated comment");
+        CommentDto commentDto = new CommentDto(null, "Updated comment");
         CommentDto updated = new CommentDto(1L, "Updated comment");
 
         when(commentService.update(eq(1L), eq(1L), eq("Updated comment"))).thenReturn(updated);

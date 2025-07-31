@@ -9,7 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import ru.otus.hw.converters.CommentConverter;
+import ru.otus.hw.mapper.CommentMapper;
 import ru.otus.hw.dto.CommentDto;
 import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.models.Comment;
@@ -36,14 +36,14 @@ class CommentServiceTest {
     private CommentRepository commentRepository;
 
     @Autowired
-    private CommentConverter commentConverter;
+    private CommentMapper commentMapper;
 
     @DisplayName("должен возвращать комментарий по id")
     @ParameterizedTest(name = "id = {0}")
     @MethodSource("commentIds")
     void shouldReturnCorrectCommentById(long id) {
         Comment entity = commentRepository.findById(id).orElseThrow();
-        CommentDto expected = commentConverter.toDto(entity);
+        CommentDto expected = commentMapper.toDto(entity);
 
         Optional<CommentDto> actualOpt = commentService.findById(id);
         assertThat(actualOpt).isPresent();
@@ -62,7 +62,7 @@ class CommentServiceTest {
     void shouldReturnCommentsByBookId(long bookId, List<Long> expectedIds) {
         List<CommentDto> expected = expectedIds.stream()
                 .map(id -> commentRepository.findById(id).orElseThrow())
-                .map(commentConverter::toDto)
+                .map(commentMapper::toDto)
                 .toList();
 
         List<CommentDto> actual = commentService.findAllByBookId(bookId);
@@ -85,7 +85,7 @@ class CommentServiceTest {
     @Test
     void shouldInsertNewComment() {
         CommentDto created = commentService.insert("New comment", 2L);
-        CommentDto fetched = commentService.findById(created.getId()).orElseThrow();
+        CommentDto fetched = commentService.findById(created.id()).orElseThrow();
         assertThat(fetched)
                 .usingRecursiveComparison()
                 .isEqualTo(created);
@@ -97,7 +97,7 @@ class CommentServiceTest {
         CommentDto updated = commentService.update(1L, 1L, "Modified content");
 
         Comment entity = commentRepository.findById(1L).orElseThrow();
-        CommentDto expected = commentConverter.toDto(entity);
+        CommentDto expected = commentMapper.toDto(entity);
 
         assertThat(updated)
                 .usingRecursiveComparison()
