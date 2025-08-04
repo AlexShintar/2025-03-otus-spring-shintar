@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Book Detail</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <style>
+        .message-container { margin-top: 40px; text-align: center; }
+        .actions { margin-top: 20px; }
+        .actions > * { margin-right: 10px; }
+    </style>
+</head>
+<body>
+<div class="container message-container" id="error-block" style="display:none;">
+    <h1 id="error-title">Error</h1>
+    <div class="alert alert-danger" id="error-message">An unexpected error occurred.</div>
+    <div class="actions">
+        <a href="/" class="btn btn-primary">Home</a>
+    </div>
+</div>
+<div class="container" id="main-content">
+    <h3 id="author-name"></h3>
+    <h3 id="book-title"></h3>
+    <div class="book-genres">
+        <p id="genres-list"></p>
+    </div>
+    <div class="actions">
+        <a href="/" class="btn btn-primary btn-xs">Home</a>
+        <a id="edit-link" class="btn btn-warning btn-xs">Edit</a>
+        <button id="remove-book-btn" class="btn btn-danger btn-xs">Remove</button>
+    </div>
+    <h4>Comments:</h4>
+    <button type="button" id="show-new-comment-form" class="btn btn-link btn-xs" style="margin-bottom:8px;">New comment</button>
+    <form id="new-comment-form" style="display:none; margin-bottom:20px;">
+        <div class="form-group">
+            <input type="text" id="new-comment-content" class="form-control input-sm" placeholder="Enter your comment" required />
+            <div class="text-danger" id="comment-error"></div>
+        </div>
+        <button type="submit" class="btn btn-success btn-xs">Save</button>
+        <button type="button" class="btn btn-default btn-xs" id="cancel-new-comment">Cancel</button>
+    </form>
+    <ul class="list-group" id="comments-list"></ul>
+</div>
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const bookId = params.get('id');
+
+    function showError(title, message) {
+        document.getElementById('main-content').style.display = 'none';
+        document.getElementById('error-title').textContent = title || 'Error';
+        document.getElementById('error-message').textContent = message || 'An unexpected error occurred.';
+        document.getElementById('error-block').style.display = 'block';
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch(`/api/v2/book/${bookId}`)
+            .then(response => {
+                if (!response.ok) throw new Error('Book not found');
+                return response.json();
+            })
+            .then(book => {
+                document.getElementById('author-name').textContent = book.author.fullName;
+                document.getElementById('book-title').textContent = book.title;
+                document.getElementById('genres-list').textContent = (book.genres || []).map(g => g.name).join(', ');
+                document.getElementById('edit-link').href = `edit.html?id=${book.id}`;
+            })
+            .catch(e => showError('Not Found', 'Book not found or an error occurred.'));
+
+        loadComments();
+
+        document.getElementById('remove-book-btn').onclick = function () {
+            if (confirm('Are you sure you want to delete this book?')) {
+                fetch(`/api/v2/book/${bookId}`, { method: 'DELETE' })
+                    .then(res => {
+                        if (res.ok) window.location.href = "/";
+                        else showError('Delete Error', 'Failed to delete book.');
+                    })
+                    .catch(() => showError('Delete Error', 'Failed to delete book.'));
+            }
+        };
+
+        document.getElementById('show-new-comment-form').onclick = function () {
+            document.getElementById('new-comment-form').style.display = 'block';
+            this.style.display = 'none';
+        };
+        document.getElementById('cancel-new-comment').onclick = function () {
+            document.getElementById('new-comment-form').style.display = 'none';
+            document.getElementById('show-new-comment-form').style.display = 'inline-block';
+            document.getElementById('comment-error').textContent = '';
+        };
+        document.getElementById('new-comment-form').onsubmit = function (e) {
+            e.preventDefault();
+            const content = document.getElementById('new-comment-content').value.trim();
+            const errorDiv = document.getElementById('comment-error');
+            errorDiv.textContent = '';
+            if (!content) {
+                errorDiv.textContent = 'Comment cannot be empty.';
+                return;
+            }
+            fetch(`/api/v2/book/${bookId}/comment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content })
+            })
+                .then(res => {
+                    if (res.ok) {
+                        document.getElementById('new-comment-content').value = '';
+                        document.getElementById('new-comment-form').style.display = 'none';
+                        document.getElementById('show-new-comment-form').style.display = 'inline-block';
+                        loadComments();
+                    } else {
+                        res.json().then(data => {
+                            if (data.errors && Array.isArray(data.errors)) {
+                                let err = data.errors.find(e => e.field === 'content');
+                                errorDiv.textContent = err ? err.message : 'Validation error.';
+                            } else if (data.message) {
+                                errorDiv.textContent = data.message;
+                            } else {
+                                errorDiv.textContent = 'Unknown error.';
+                            }
+                        }).catch(() => showError('Error', 'Unexpected error while adding comment.'));
+                    }
+                })
+                .catch(() => showError('Error', 'Unexpected error while adding comment.'));
+        };
+    });
+
+    function loadComments() {
+        fetch(`/api/v2/book/${bookId}/comment`)
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to load comments.');
+                return res.json();
+            })
+            .then(comments => {
+                const list = document.getElementById('comments-list');
+                list.innerHTML = '';
+                comments.forEach(c => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item';
+                    li.id = 'comment-' + c.id;
+                    li.innerHTML = `
+                    <p>${escapeHtml(c.content)}</p>
+                    <div class="comment-actions">
+                        <button type="button" class="btn btn-link btn-xs edit-link" data-id="${c.id}">Edit</button>
+                        <button type="button" class="btn btn-link btn-xs remove-comment" data-id="${c.id}">Remove</button>
+                    </div>
+                    <form class="edit-form" id="edit-form-${c.id}" style="display:none;">
+                        <div class="form-group">
+                            <input type="text" name="content" class="form-control input-sm" value="${escapeHtml(c.content)}" required />
+                            <div class="text-danger edit-comment-error"></div>
+                        </div>
+                        <button type="submit" class="btn btn-xs btn-success">Save</button>
+                        <button type="button" class="btn btn-xs btn-default cancel-btn" data-id="${c.id}">Cancel</button>
+                    </form>
+                `;
+                    list.appendChild(li);
+                    li.querySelector('.edit-link').onclick = function () {
+                        document.querySelectorAll('.edit-form').forEach(f => f.style.display = 'none');
+                        document.getElementById('edit-form-' + c.id).style.display = 'block';
+                        li.querySelector('.edit-comment-error').textContent = '';
+                    };
+                    li.querySelector('.remove-comment').onclick = function () {
+                        if (confirm('Delete this comment?')) {
+                            fetch(`/api/v2/book/${bookId}/comment/${c.id}`, { method: 'DELETE' })
+                                .then(r => {
+                                    if (r.ok) loadComments();
+                                    else showError('Error', 'Failed to delete comment.');
+                                })
+                                .catch(() => showError('Error', 'Failed to delete comment.'));
+                        }
+                    };
+                    li.querySelector('.cancel-btn').onclick = function () {
+                        document.getElementById('edit-form-' + c.id).style.display = 'none';
+                        li.querySelector('.edit-comment-error').textContent = '';
+                    };
+                    li.querySelector('.edit-form').onsubmit = function (e) {
+                        e.preventDefault();
+                        const value = this.elements['content'].value;
+                        const errorDiv = this.querySelector('.edit-comment-error');
+                        errorDiv.textContent = '';
+                        if (!value) {
+                            errorDiv.textContent = 'Comment cannot be empty.';
+                            return;
+                        }
+                        fetch(`/api/v2/book/${bookId}/comment/${c.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ content: value })
+                        })
+                            .then(r => {
+                                if (r.ok) {
+                                    loadComments();
+                                } else {
+                                    r.json().then(data => {
+                                        if (data.errors && Array.isArray(data.errors)) {
+                                            let err = data.errors.find(e => e.field === 'content');
+                                            errorDiv.textContent = err ? err.message : 'Validation error.';
+                                        } else if (data.message) {
+                                            errorDiv.textContent = data.message;
+                                        } else {
+                                            errorDiv.textContent = 'Unknown error.';
+                                        }
+                                    }).catch(() => showError('Error', 'Unexpected error while updating comment.'));
+                                }
+                            })
+                            .catch(() => showError('Error', 'Unexpected error while updating comment.'));
+                    };
+                });
+            })
+            .catch(() => showError('Error', 'Failed to load comments.'));
+    }
+
+    function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, function(m) {
+            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]);
+        });
+    }
+</script>
+</body>
+</html>
