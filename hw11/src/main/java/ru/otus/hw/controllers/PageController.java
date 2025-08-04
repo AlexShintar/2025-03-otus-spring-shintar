@@ -7,7 +7,22 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class PageController {
 
     @GetMapping("/")
-    public String mainPage() {
+    public String mainPageRedirect() {
+        return "redirect:/list.html";
+    }
+
+    @GetMapping("/list.html")
+    public String listPage() {
         return "list";
+    }
+
+    @GetMapping("/detail.html")
+    public String detailPage() {
+        return "detail";
+    }
+
+    @GetMapping("/edit.html")
+    public String editPage() {
+        return "edit";
     }
 }

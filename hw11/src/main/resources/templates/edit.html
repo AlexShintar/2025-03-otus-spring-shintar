@@ -62,7 +62,7 @@
     }
 
     function loadAuthorsAndGenres(selectedAuthorId, selectedGenreIds) {
-        fetch('/api/v1/author')
+        fetch('/api/v2/author')
             .then(res => res.json())
             .then(data => {
                 authors = data;
@@ -75,7 +75,7 @@
             })
             .catch(() => alert('Failed to load authors'));
 
-        fetch('/api/v1/genre')
+        fetch('/api/v2/genre')
             .then(res => res.json())
             .then(data => {
                 genres = data;
@@ -115,7 +115,7 @@
     if (bookId) {
         formTitle.innerText = 'Edit Book';
         formHeader.innerText = 'Edit Book';
-        fetch(`/api/v1/book/${bookId}`)
+        fetch(`/api/v2/book/${bookId}`)
             .then(res => res.json())
             .then(book => {
                 document.getElementById('book-id').value = book.id;
@@ -172,7 +172,7 @@
 
         const dto = { title, authorId, genreIds };
         const method = bookId ? 'PUT' : 'POST';
-        const url = bookId ? `/api/v1/book/${bookId}` : '/api/v1/book';
+        const url = bookId ? `/api/v2/book/${bookId}` : '/api/v2/book';
 
         fetch(url, {
             method: method,

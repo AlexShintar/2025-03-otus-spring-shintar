@@ -7,6 +7,4 @@ import ru.otus.hw.models.Author;
 @Mapper(componentModel = "spring")
 public interface AuthorMapper {
     AuthorDto toDto(Author author);
-
-    Author toEntity(AuthorDto dto);
 }

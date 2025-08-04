@@ -1,22 +1,19 @@
 package ru.otus.hw.services;
 
-import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import ru.otus.hw.dto.BookCreateDto;
 import ru.otus.hw.dto.BookDto;
 import ru.otus.hw.dto.BookUpdateDto;
 
-import java.util.List;
-
 public interface BookService {
-    BookDto findById(long id);
+    Mono<BookDto> findById(long id);
 
-    List<BookDto> findAll();
+    Flux<BookDto> findAll();
 
-    @Transactional
-    BookDto insert(BookCreateDto bookCreateDto);
+    Mono<BookDto> insert(BookCreateDto form);
 
-    @Transactional
-    BookDto update(BookUpdateDto bookUpdateDto, long id);
+    Mono<BookDto> update(BookUpdateDto form, long id);
 
-    void deleteById(long id);
+    Mono<Void> deleteById(long id);
 }

@@ -7,6 +7,4 @@ import ru.otus.hw.models.Genre;
 @Mapper(componentModel = "spring")
 public interface GenreMapper {
     GenreDto toDto(Genre genre);
-
-    Genre toEntity(GenreDto dto);
 }
