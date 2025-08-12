@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.lang.Nullable;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -42,55 +43,63 @@ class CommentControllerSecurityTest {
     @MockitoBean
     private CommentService commentService;
 
-    private void executeRequestAndVerify(MockHttpServletRequestBuilder requestBuilder,
-                                         @Nullable String userName,
-                                         int expectedStatus,
-                                         @Nullable String expectedRedirectUrl) throws Exception {
-        if (userName != null) {
-            requestBuilder.with(user(userName));
+    private static SecurityMockMvcRequestPostProcessors.UserRequestPostProcessor asUser() {
+        return user(TEST_USER);
+    }
+
+    private void performAndAssert(MockHttpServletRequestBuilder request,
+                                  @Nullable SecurityMockMvcRequestPostProcessors.UserRequestPostProcessor principal,
+                                  int expectedStatus,
+                                  @Nullable String expectedRedirectUrl) throws Exception {
+        if (principal != null) {
+            request.with(principal);
         }
-
-        ResultActions resultActions = mockMvc.perform(requestBuilder)
+        ResultActions ra = mockMvc.perform(request)
                 .andExpect(status().is(expectedStatus));
-
         if (expectedRedirectUrl != null) {
-            resultActions.andExpect(redirectedUrl(expectedRedirectUrl));
+            ra.andExpect(redirectedUrl(expectedRedirectUrl));
         }
     }
 
-    @DisplayName("Тест безопасности при создании комментария")
-    @ParameterizedTest(name = "Пользователь: {0} -> HTTP статус: {1}")
-    @MethodSource("modifyingRequestsTestData")
-    void testCommentCreationSecurity(@Nullable String userName, int expectedStatus, @Nullable String expectedRedirectUrl) throws Exception {
-        var requestBuilder = MockMvcRequestBuilders.post("/book/{bookId}/comment", TEST_BOOK_ID)
+    @DisplayName("POST /book/{bookId}/comment — аноним -> 302 login, user -> 302 /book/{id}")
+    @ParameterizedTest
+    @MethodSource("authOnlyData")
+    void commentCreationSecurity(@Nullable SecurityMockMvcRequestPostProcessors.UserRequestPostProcessor principal,
+                                 int expectedStatus,
+                                 @Nullable String redirect) throws Exception {
+        var req = MockMvcRequestBuilders.post("/book/{bookId}/comment", TEST_BOOK_ID)
                 .param("content", TEST_COMMENT_CONTENT)
                 .with(csrf());
-        executeRequestAndVerify(requestBuilder, userName, expectedStatus, expectedRedirectUrl);
+        performAndAssert(req, principal, expectedStatus, redirect);
     }
 
-    @DisplayName("Тест безопасности при обновлении комментария")
-    @ParameterizedTest(name = "Пользователь: {0} -> HTTP статус: {1}")
-    @MethodSource("modifyingRequestsTestData")
-    void testCommentUpdateSecurity(@Nullable String userName, int expectedStatus, @Nullable String expectedRedirectUrl) throws Exception {
-        var requestBuilder = MockMvcRequestBuilders.put("/book/{bookId}/comment/{commentId}", TEST_BOOK_ID, TEST_COMMENT_ID)
+    @DisplayName("PUT /book/{bookId}/comment/{commentId} — аноним -> 302 login, user -> 302 /book/{id}")
+    @ParameterizedTest
+    @MethodSource("authOnlyData")
+    void commentUpdateSecurity(@Nullable SecurityMockMvcRequestPostProcessors.UserRequestPostProcessor principal,
+                               int expectedStatus,
+                               @Nullable String redirect) throws Exception {
+        var req = MockMvcRequestBuilders.put("/book/{bookId}/comment/{commentId}", TEST_BOOK_ID, TEST_COMMENT_ID)
                 .param("content", UPDATED_COMMENT_CONTENT)
                 .with(csrf());
-        executeRequestAndVerify(requestBuilder, userName, expectedStatus, expectedRedirectUrl);
+        performAndAssert(req, principal, expectedStatus, redirect);
     }
 
-    @DisplayName("Тест безопасности при удалении комментария")
-    @ParameterizedTest(name = "Пользователь: {0} -> HTTP статус: {1}")
-    @MethodSource("modifyingRequestsTestData")
-    void testCommentDeletionSecurity(@Nullable String userName, int expectedStatus, @Nullable String expectedRedirectUrl) throws Exception {
-        var requestBuilder = MockMvcRequestBuilders.delete("/book/{bookId}/comment/{commentId}", TEST_BOOK_ID, TEST_COMMENT_ID)
+    @DisplayName("DELETE /book/{bookId}/comment/{commentId} — аноним -> 302 login, user -> 302 /book/{id}")
+    @ParameterizedTest
+    @MethodSource("authOnlyData")
+    void commentDeletionSecurity(@Nullable SecurityMockMvcRequestPostProcessors.UserRequestPostProcessor principal,
+                                 int expectedStatus,
+                                 @Nullable String redirect) throws Exception {
+        var req = MockMvcRequestBuilders.delete("/book/{bookId}/comment/{commentId}", TEST_BOOK_ID, TEST_COMMENT_ID)
                 .with(csrf());
-        executeRequestAndVerify(requestBuilder, userName, expectedStatus, expectedRedirectUrl);
+        performAndAssert(req, principal, expectedStatus, redirect);
     }
 
-    private static Stream<Arguments> modifyingRequestsTestData() {
+    private static Stream<Arguments> authOnlyData() {
         return Stream.of(
-                Arguments.of(TEST_USER, 302, SUCCESS_REDIRECT_URL),
-                Arguments.of(null, 302, LOGIN_REDIRECT_URL)
+                Arguments.of(null, 302, LOGIN_REDIRECT_URL),
+                Arguments.of(asUser(), 302, SUCCESS_REDIRECT_URL)
         );
     }
 }

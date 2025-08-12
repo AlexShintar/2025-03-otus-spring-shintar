@@ -6,6 +6,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.test.context.support.WithMockUser; // <-- Не забудьте импортировать
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,6 +59,7 @@ class BookServiceTest {
     @Autowired
     private GenreConverter genreConverter;
 
+    // Этот тест не требует авторизации, так как findById публичный
     @DisplayName("должен возвращать книгу по id")
     @ParameterizedTest(name = "id = {0}")
     @MethodSource("bookIds")
@@ -71,6 +73,7 @@ class BookServiceTest {
                 .isEqualTo(expected);
     }
 
+    // Этот тест тоже не требует авторизации
     @DisplayName("должен выбрасывать EntityNotFoundException для несуществующей книги")
     @Test
     void shouldThrowEntityNotFoundExceptionForNonExistingBook() {
@@ -87,6 +90,7 @@ class BookServiceTest {
         return Stream.of(1L, 2L, 3L);
     }
 
+    // Этот тест тоже не требует авторизации
     @DisplayName("должен возвращать все предзагруженные книги")
     @Test
     void shouldReturnAllPreloadedBooks() {
@@ -106,6 +110,7 @@ class BookServiceTest {
                 );
     }
 
+    @WithMockUser(roles = "ADMIN") // <-- Добавлена аннотация
     @DisplayName("должен сохранять новую книгу")
     @Test
     void shouldInsertNewBook() {
@@ -139,6 +144,7 @@ class BookServiceTest {
                 .isEqualTo(created);
     }
 
+    @WithMockUser(roles = "ADMIN") // <-- Добавлена аннотация
     @DisplayName("должен обновлять существующую книгу")
     @Test
     void shouldUpdateExistingBook() {
@@ -174,6 +180,7 @@ class BookServiceTest {
                 .isEqualTo(updated);
     }
 
+    @WithMockUser(roles = "ADMIN") // <-- Добавлена аннотация
     @DisplayName("должен выбрасывать EntityNotFoundException при обновлении несуществующей книги")
     @Test
     void shouldThrowEntityNotFoundExceptionWhenUpdatingNonExistingBook() {
@@ -196,6 +203,7 @@ class BookServiceTest {
                 .contains("Book with id " + nonExisting.getId() + " not found");
     }
 
+    @WithMockUser(roles = "ADMIN") // <-- Добавлена аннотация
     @DisplayName("должен удалять книгу по id")
     @Test
     void shouldDeleteBookById() {
@@ -208,6 +216,7 @@ class BookServiceTest {
     }
 
 
+    @WithMockUser(roles = "ADMIN") // <-- Добавлена аннотация
     @DisplayName("после удаления книги должны каскадно удаляться её комментарии")
     @Test
     void deleteBookShouldCascadeDeleteComments() {
@@ -224,6 +233,7 @@ class BookServiceTest {
         assertThat(commentsAfter).isEmpty();
     }
 
+    @WithMockUser(roles = "ADMIN") // <-- Добавлена аннотация
     @DisplayName("должен корректно обрабатывать пустой список книг")
     @Test
     void shouldHandleEmptyBookList() {
@@ -235,6 +245,7 @@ class BookServiceTest {
         assertThat(books).isEmpty();
     }
 
+    @WithMockUser(roles = "ADMIN") // <-- Добавлена аннотация
     @DisplayName("должен сохранять книгу с минимальными данными")
     @Test
     void shouldInsertBookWithMinimalData() {
@@ -258,6 +269,7 @@ class BookServiceTest {
         assertThat(created.getGenres()).hasSize(1);
     }
 
+    @WithMockUser(roles = "ADMIN") // <-- Добавлена аннотация
     @DisplayName("должен обновлять только переданные поля книги")
     @Test
     void shouldUpdateOnlyProvidedFields() {

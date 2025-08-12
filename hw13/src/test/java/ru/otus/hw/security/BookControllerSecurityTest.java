@@ -8,12 +8,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.lang.Nullable;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import ru.otus.hw.controllers.BookController;
+import ru.otus.hw.converters.BookConverter;
 import ru.otus.hw.dto.AuthorDto;
 import ru.otus.hw.dto.BookDto;
 import ru.otus.hw.dto.BookUpdateDto;
@@ -22,7 +24,6 @@ import ru.otus.hw.services.AuthorService;
 import ru.otus.hw.services.BookService;
 import ru.otus.hw.services.CommentService;
 import ru.otus.hw.services.GenreService;
-import ru.otus.hw.converters.BookConverter;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -30,8 +31,8 @@ import java.util.stream.Stream;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -41,7 +42,6 @@ class BookControllerSecurityTest {
 
     private static final String LOGIN_REDIRECT_URL = "http://localhost/login";
     private static final String SUCCESS_REDIRECT_URL = "/";
-    private static final String TEST_USER = "testuser";
 
     private static final Long TEST_BOOK_ID = 1L;
     private static final Long TEST_AUTHOR_ID = 1L;
@@ -95,9 +95,11 @@ class BookControllerSecurityTest {
     }
 
     private void setupBasicMocks() {
+        when(bookService.findAll()).thenReturn(List.of(createTestBook()));
         when(bookService.findById(anyLong())).thenReturn(createTestBook());
         when(authorService.findAll()).thenReturn(createTestAuthors());
         when(genreService.findAll()).thenReturn(createTestGenres());
+        when(commentService.findAllByBookId(anyLong())).thenReturn(List.of());
     }
 
     private void setupEditMocks() {
@@ -105,101 +107,131 @@ class BookControllerSecurityTest {
         when(bookConverter.toFormDto(any())).thenReturn(createTestBookUpdateDto());
     }
 
-    private void executeRequestAndVerify(MockHttpServletRequestBuilder requestBuilder,
-                                         @Nullable String userName,
-                                         int expectedStatus,
-                                         @Nullable String expectedRedirectUrl) throws Exception {
-        if (userName != null) {
-            requestBuilder.with(user(userName));
-        }
+    private static SecurityMockMvcRequestPostProcessors.UserRequestPostProcessor asUser() {
+        return user("user");
+    }
 
-        ResultActions resultActions = mockMvc.perform(requestBuilder)
+    private static SecurityMockMvcRequestPostProcessors.UserRequestPostProcessor asAdmin() {
+        return user("admin").roles("ADMIN");
+    }
+
+    private void performAndAssert(MockHttpServletRequestBuilder request,
+                                  @Nullable SecurityMockMvcRequestPostProcessors.UserRequestPostProcessor principal,
+                                  int expectedStatus,
+                                  @Nullable String expectedRedirectUrl) throws Exception {
+        if (principal != null) {
+            request.with(principal);
+        }
+        ResultActions ra = mockMvc.perform(request)
                 .andExpect(status().is(expectedStatus));
-
         if (expectedRedirectUrl != null) {
-            resultActions.andExpect(redirectedUrl(expectedRedirectUrl));
+            ra.andExpect(redirectedUrl(expectedRedirectUrl));
         }
     }
 
-    @DisplayName("Тест доступа к списку книг")
-    @ParameterizedTest(name = "Пользователь: {0} -> HTTP статус: {1}")
-    @MethodSource("getRequestsTestData")
-    void testBookListAccess(@Nullable String userName, int expectedStatus, @Nullable String expectedRedirectUrl) throws Exception {
+    @DisplayName("GET / — список книг: аноним -> 302 login, user/admin -> 200")
+    @ParameterizedTest
+    @MethodSource("publicGetData")
+    void bookListAccess(@Nullable SecurityMockMvcRequestPostProcessors.UserRequestPostProcessor principal,
+                        int expectedStatus,
+                        @Nullable String redirect) throws Exception {
         setupBasicMocks();
-        executeRequestAndVerify(MockMvcRequestBuilders.get("/"), userName, expectedStatus, expectedRedirectUrl);
+        performAndAssert(MockMvcRequestBuilders.get("/"), principal, expectedStatus, redirect);
     }
 
-    @DisplayName("Тест доступа к детальной информации о книге")
-    @ParameterizedTest(name = "Пользователь: {0} -> HTTP статус: {1}")
-    @MethodSource("getRequestsTestData")
-    void testBookDetailAccess(@Nullable String userName, int expectedStatus, @Nullable String expectedRedirectUrl) throws Exception {
+    @DisplayName("GET /book/{id} — детали книги: аноним -> 302 login, user/admin -> 200")
+    @ParameterizedTest
+    @MethodSource("publicGetData")
+    void bookDetailAccess(@Nullable SecurityMockMvcRequestPostProcessors.UserRequestPostProcessor principal,
+                          int expectedStatus,
+                          @Nullable String redirect) throws Exception {
         setupBasicMocks();
-        executeRequestAndVerify(MockMvcRequestBuilders.get("/book/{id}", TEST_BOOK_ID), userName, expectedStatus, expectedRedirectUrl);
+        performAndAssert(MockMvcRequestBuilders.get("/book/{id}", TEST_BOOK_ID), principal, expectedStatus, redirect);
     }
 
-    @DisplayName("Тест доступа к форме создания книги")
-    @ParameterizedTest(name = "Пользователь: {0} -> HTTP статус: {1}")
-    @MethodSource("getRequestsTestData")
-    void testBookCreationFormAccess(@Nullable String userName, int expectedStatus, @Nullable String expectedRedirectUrl) throws Exception {
+    @DisplayName("GET /book/new — только ADMIN: аноним -> 302 login, user -> 302 /access-denied, admin -> 200")
+    @ParameterizedTest
+    @MethodSource("adminGetData")
+    void bookCreationFormAccess(@Nullable SecurityMockMvcRequestPostProcessors.UserRequestPostProcessor principal,
+                                int expectedStatus,
+                                @Nullable String redirect) throws Exception {
         setupBasicMocks();
-        executeRequestAndVerify(MockMvcRequestBuilders.get("/book/new"), userName, expectedStatus, expectedRedirectUrl);
+        performAndAssert(MockMvcRequestBuilders.get("/book/new"), principal, expectedStatus, redirect);
     }
 
-    @DisplayName("Тест доступа к форме редактирования книги")
-    @ParameterizedTest(name = "Пользователь: {0} -> HTTP статус: {1}")
-    @MethodSource("getRequestsTestData")
-    void testBookEditFormAccess(@Nullable String userName, int expectedStatus, @Nullable String expectedRedirectUrl) throws Exception {
+    @DisplayName("GET /book/{id}/edit — только ADMIN: аноним -> 302 login, user -> 302 /access-denied, admin -> 200")
+    @ParameterizedTest
+    @MethodSource("adminGetData")
+    void bookEditFormAccess(@Nullable SecurityMockMvcRequestPostProcessors.UserRequestPostProcessor principal,
+                            int expectedStatus,
+                            @Nullable String redirect) throws Exception {
         setupEditMocks();
-        executeRequestAndVerify(MockMvcRequestBuilders.get("/book/{id}/edit", TEST_BOOK_ID), userName, expectedStatus, expectedRedirectUrl);
+        performAndAssert(MockMvcRequestBuilders.get("/book/{id}/edit", TEST_BOOK_ID), principal, expectedStatus, redirect);
     }
 
-    @DisplayName("Тест безопасности при создании книги")
-    @ParameterizedTest(name = "Пользователь: {0} -> HTTP статус: {1}")
-    @MethodSource("modifyingRequestsTestData")
-    void testBookCreationSecurity(@Nullable String userName, int expectedStatus, @Nullable String expectedRedirectUrl) throws Exception {
+    @DisplayName("POST /book — только ADMIN: аноним -> 302 login, user -> 302 /access-denied, admin -> 302 /")
+    @ParameterizedTest
+    @MethodSource("adminWriteData")
+    void bookCreationSecurity(@Nullable SecurityMockMvcRequestPostProcessors.UserRequestPostProcessor principal,
+                              int expectedStatus,
+                              @Nullable String redirect) throws Exception {
         setupBasicMocks();
-        var requestBuilder = MockMvcRequestBuilders.post("/book")
+        var req = MockMvcRequestBuilders.post("/book")
                 .param("title", "New Book Title")
                 .param("authorId", String.valueOf(TEST_AUTHOR_ID))
                 .param("genreIds", String.valueOf(TEST_GENRE_ID))
                 .with(csrf());
-        executeRequestAndVerify(requestBuilder, userName, expectedStatus, expectedRedirectUrl);
+        performAndAssert(req, principal, expectedStatus, redirect);
     }
 
-    @DisplayName("Тест безопасности при обновлении книги")
-    @ParameterizedTest(name = "Пользователь: {0} -> HTTP статус: {1}")
-    @MethodSource("modifyingRequestsTestData")
-    void testBookUpdateSecurity(@Nullable String userName, int expectedStatus, @Nullable String expectedRedirectUrl) throws Exception {
+    @DisplayName("PUT /book/{id} — только ADMIN: аноним -> 302 login, user -> 302 /access-denied, admin -> 302 /")
+    @ParameterizedTest
+    @MethodSource("adminWriteData")
+    void bookUpdateSecurity(@Nullable SecurityMockMvcRequestPostProcessors.UserRequestPostProcessor principal,
+                            int expectedStatus,
+                            @Nullable String redirect) throws Exception {
         setupBasicMocks();
-        var requestBuilder = MockMvcRequestBuilders.put("/book/{id}", TEST_BOOK_ID)
+        var req = MockMvcRequestBuilders.put("/book/{id}", TEST_BOOK_ID)
                 .param("title", "Updated Book Title")
                 .param("authorId", String.valueOf(TEST_AUTHOR_ID))
                 .param("genreIds", String.valueOf(TEST_GENRE_ID))
                 .with(csrf());
-        executeRequestAndVerify(requestBuilder, userName, expectedStatus, expectedRedirectUrl);
+        performAndAssert(req, principal, expectedStatus, redirect);
     }
 
-    @DisplayName("Тест безопасности при удалении книги")
-    @ParameterizedTest(name = "Пользователь: {0} -> HTTP статус: {1}")
-    @MethodSource("modifyingRequestsTestData")
-    void testBookDeletionSecurity(@Nullable String userName, int expectedStatus, @Nullable String expectedRedirectUrl) throws Exception {
+    @DisplayName("DELETE /book/{id} — только ADMIN: аноним -> 302 login, user -> 302 /access-denied, admin -> 302 /")
+    @ParameterizedTest
+    @MethodSource("adminWriteData")
+    void bookDeletionSecurity(@Nullable SecurityMockMvcRequestPostProcessors.UserRequestPostProcessor principal,
+                              int expectedStatus,
+                              @Nullable String redirect) throws Exception {
         setupBasicMocks();
-        var requestBuilder = MockMvcRequestBuilders.delete("/book/{id}", TEST_BOOK_ID)
+        var req = MockMvcRequestBuilders.delete("/book/{id}", TEST_BOOK_ID)
                 .with(csrf());
-        executeRequestAndVerify(requestBuilder, userName, expectedStatus, expectedRedirectUrl);
+        performAndAssert(req, principal, expectedStatus, redirect);
     }
 
-    private static Stream<Arguments> getRequestsTestData() {
+    private static Stream<Arguments> publicGetData() {
         return Stream.of(
-                Arguments.of(TEST_USER, 200, null),
-                Arguments.of(null, 302, LOGIN_REDIRECT_URL)
+                Arguments.of(null, 302, LOGIN_REDIRECT_URL),
+                Arguments.of(asUser(), 200, null),
+                Arguments.of(asAdmin(), 200, null)
         );
     }
 
-    private static Stream<Arguments> modifyingRequestsTestData() {
+    private static Stream<Arguments> adminGetData() {
         return Stream.of(
-                Arguments.of(TEST_USER, 302, SUCCESS_REDIRECT_URL),
-                Arguments.of(null, 302, LOGIN_REDIRECT_URL)
+                Arguments.of(null, 302, LOGIN_REDIRECT_URL),
+                Arguments.of(asUser(), 302, "/access-denied"),
+                Arguments.of(asAdmin(), 200, null)
+        );
+    }
+
+    private static Stream<Arguments> adminWriteData() {
+        return Stream.of(
+                Arguments.of(null, 302, LOGIN_REDIRECT_URL),
+                Arguments.of(asUser(), 302, "/access-denied"),
+                Arguments.of(asAdmin(), 302, SUCCESS_REDIRECT_URL)
         );
     }
 }

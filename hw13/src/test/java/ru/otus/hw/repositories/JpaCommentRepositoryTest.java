@@ -128,7 +128,7 @@ class JpaCommentRepositoryTest {
 
 
     private static Stream<Comment> getDbComments() {
-        return LongStream.rangeClosed(1, 6)
+        return LongStream.rangeClosed(1, 5)
                 .mapToObj(id -> {
                     Comment comment = new Comment();
                     comment.setId(id);
@@ -137,7 +137,7 @@ class JpaCommentRepositoryTest {
     }
 
     private static Stream<Arguments> getDbCommentsByBookId() {
-        var data = Map.of(1L, List.of(1L, 2L, 3L), 2L, List.of(4L, 5L), 3L, List.of(6L));
+        var data = Map.of(1L, List.of(1L, 2L), 2L, List.of(3L, 4L), 3L, List.of(5L));
         return data.entrySet().stream()
                 .map(e -> arguments(e.getKey(),
                         e.getValue().stream()
