@@ -67,7 +67,7 @@ public class BookServiceAclTest {
     @WithMockUser(username = "nobby", roles = "USER")
     void userCanFindAllBooks() {
         List<BookDto> books = assertDoesNotThrow(() -> bookService.findAll());
-        assertThat(books).hasSize(3); // Согласно вашим liquibase-данным
+        assertThat(books).hasSize(3);
     }
 
     @Test

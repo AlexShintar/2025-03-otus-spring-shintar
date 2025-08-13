@@ -6,7 +6,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.test.context.support.WithMockUser; // <-- Не забудьте импортировать
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,7 +39,6 @@ class CommentServiceTest {
     @Autowired
     private CommentConverter commentConverter;
 
-    // Этот метод не требует авторизации
     @DisplayName("должен возвращать комментарий по id")
     @ParameterizedTest(name = "id = {0}")
     @MethodSource("commentIds")
@@ -58,7 +57,6 @@ class CommentServiceTest {
         return Stream.of(1L, 2L, 3L, 4L, 5L);
     }
 
-    // Требуется роль ADMIN, чтобы @PostFilter не отфильтровал все результаты
     @WithMockUser(roles = "ADMIN")
     @DisplayName("должен возвращать все комментарии для книги")
     @ParameterizedTest(name = "bookId = {0}")
@@ -85,7 +83,6 @@ class CommentServiceTest {
                 .map(e -> org.junit.jupiter.params.provider.Arguments.arguments(e.getKey(), e.getValue()));
     }
 
-    // Для создания комментария достаточно быть аутентифицированным пользователем
     @WithMockUser(username = "test_user")
     @DisplayName("должен сохранять новый комментарий")
     @Test
@@ -97,7 +94,6 @@ class CommentServiceTest {
                 .isEqualTo(created);
     }
 
-    // Требуется роль ADMIN для обновления любого комментария
     @WithMockUser(roles = "ADMIN")
     @DisplayName("должен обновлять существующий комментарий")
     @Test
@@ -112,7 +108,6 @@ class CommentServiceTest {
                 .isEqualTo(expected);
     }
 
-    // Требуется роль ADMIN для удаления любого комментария
     @WithMockUser(roles = "ADMIN")
     @DisplayName("должен удалять комментарий по id")
     @Test
@@ -122,7 +117,6 @@ class CommentServiceTest {
         assertThat(commentRepository.findById(3L)).isEmpty();
     }
 
-    // Требуется аутентификация для вызова метода insert
     @WithMockUser(username = "test_user")
     @DisplayName("insert с несуществующей книгой должен бросать EntityNotFoundException")
     @Test
@@ -131,7 +125,6 @@ class CommentServiceTest {
                 () -> commentService.insert("X", 999L));
     }
 
-    // Требуется роль ADMIN, чтобы пройти проверку @PreAuthorize
     @WithMockUser(roles = "ADMIN")
     @DisplayName("update для несуществующего комментария должен бросать EntityNotFoundException")
     @Test
