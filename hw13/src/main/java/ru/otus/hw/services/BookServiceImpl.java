@@ -12,6 +12,7 @@ import ru.otus.hw.dto.BookDto;
 import ru.otus.hw.exceptions.EntityNotFoundException;
 import ru.otus.hw.models.Book;
 import ru.otus.hw.repositories.BookRepository;
+import ru.otus.hw.security.AclAwareBookReader;
 
 import java.util.List;
 
@@ -24,6 +25,9 @@ public class BookServiceImpl implements BookService {
 
     private final AclServiceWrapperService aclServiceWrapperService;
 
+    private final AclAwareBookReader aclAwareBookReader;
+
+    @PreAuthorize("hasPermission(#id, 'ru.otus.hw.models.Book', 'READ')")
     @Transactional(readOnly = true)
     @Override
     public BookDto findById(long id) {
@@ -37,7 +41,8 @@ public class BookServiceImpl implements BookService {
     @Transactional(readOnly = true)
     @Override
     public List<BookDto> findAll() {
-        return bookRepository.findAll().stream()
+        return aclAwareBookReader.findAllBooksSecured()
+                .stream()
                 .map(bookConverter::toDto)
                 .toList();
     }
@@ -54,7 +59,7 @@ public class BookServiceImpl implements BookService {
         return bookConverter.toDto(saved);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasPermission(#bookDto.id, 'ru.otus.hw.models.Book', 'WRITE') or hasRole('ADMIN')")
     @Transactional
     @Override
     public BookDto update(BookDto bookDto) {
@@ -66,7 +71,7 @@ public class BookServiceImpl implements BookService {
         return bookConverter.toDto(updated);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasPermission(#id, 'ru.otus.hw.models.Book', 'DELETE') or hasRole('ADMIN')")
     @Transactional
     @Override
     public void deleteById(long id) {

@@ -6,6 +6,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Propagation;
@@ -62,6 +63,7 @@ class BookServiceTest {
     @DisplayName("должен возвращать книгу по id")
     @ParameterizedTest(name = "id = {0}")
     @MethodSource("bookIds")
+    @WithMockUser(username = "nobby", roles = "USER")
     void shouldReturnCorrectBookById(long id) {
         var entity = bookRepository.findById(id).orElseThrow();
         var expected = bookConverter.toDto(entity);
@@ -72,16 +74,14 @@ class BookServiceTest {
                 .isEqualTo(expected);
     }
 
-    @DisplayName("должен выбрасывать EntityNotFoundException для несуществующей книги")
+    @DisplayName("для несуществующей книги сначала сработает авторизация (AuthorizationDeniedException)")
     @Test
-    void shouldThrowEntityNotFoundExceptionForNonExistingBook() {
+    @WithMockUser(username = "nobby", roles = "USER")
+    void shouldThrowAuthorizationDeniedForNonExistingBook() {
         long nonExistingId = 999L;
 
-        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
+        assertThrows(AuthorizationDeniedException.class,
                 () -> bookService.findById(nonExistingId));
-
-        assertThat(exception.getMessage())
-                .contains("Book with id " + nonExistingId + " not found");
     }
 
     private static Stream<Long> bookIds() {
@@ -90,6 +90,7 @@ class BookServiceTest {
 
     @DisplayName("должен возвращать все предзагруженные книги")
     @Test
+    @WithMockUser(username = "nobby", roles = "USER")
     void shouldReturnAllPreloadedBooks() {
         List<BookDto> actual = bookService.findAll();
         assertThat(actual)
@@ -170,7 +171,6 @@ class BookServiceTest {
         assertThat(updated.getAuthor().getId()).isEqualTo(1L);
         assertThat(updated.getGenres()).hasSize(2);
 
-
         BookDto fetched = bookService.findById(1L);
         assertThat(fetched)
                 .usingRecursiveComparison()
@@ -208,10 +208,9 @@ class BookServiceTest {
 
         bookService.deleteById(3L);
 
-        assertThrows(EntityNotFoundException.class,
+        assertThrows(AuthorizationDeniedException.class,
                 () -> bookService.findById(3L));
     }
-
 
     @WithMockUser(roles = "ADMIN")
     @DisplayName("после удаления книги должны каскадно удаляться её комментарии")
@@ -223,7 +222,7 @@ class BookServiceTest {
 
         bookService.deleteById(bookId);
 
-        assertThrows(EntityNotFoundException.class,
+        assertThrows(AuthorizationDeniedException.class,
                 () -> bookService.findById(bookId));
 
         List<CommentDto> commentsAfter = commentService.findAllByBookId(bookId);
@@ -270,7 +269,6 @@ class BookServiceTest {
     @DisplayName("должен обновлять только переданные поля книги")
     @Test
     void shouldUpdateOnlyProvidedFields() {
-
         BookDto original = bookService.findById(1L);
 
         BookDto updateDto = new BookDto();

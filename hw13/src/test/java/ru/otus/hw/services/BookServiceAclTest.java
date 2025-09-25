@@ -86,6 +86,38 @@ public class BookServiceAclTest {
         assertThrows(AuthorizationDeniedException.class, () -> bookService.insert(newBookDto));
     }
 
+    @Test
+    @DisplayName("Создатель может обновить и удалить созданную им книгу")
+    @WithMockUser(username = "vetinari", roles = "ADMIN")
+    void ownerAdminCanUpdateAndDeleteOwnedBook() {
+         BookDto original = bookService.findById(EXISTING_BOOK_ID);
+        BookDto update = new BookDto();
+        update.setId(original.getId());
+        update.setTitle(original.getTitle() + " (updated)");
+        update.setAuthor(original.getAuthor());
+        update.setGenres(original.getGenres());
+        BookDto updated = assertDoesNotThrow(() -> bookService.update(update));
+        assertThat(updated.getTitle()).contains("(updated)");
+        assertDoesNotThrow(() -> bookService.deleteById(EXISTING_BOOK_ID));
+        assertThrows(AuthorizationDeniedException.class,
+                () -> bookService.findById(EXISTING_BOOK_ID));
+    }
+
+    @Test
+    @DisplayName("Пользователь не может обновлять/удалять чужую книгу, но может её читать")
+    @WithMockUser(username = "nobby", roles = "USER")
+    void nonOwnerUserCannotModifyButCanRead() {
+        BookDto readable = assertDoesNotThrow(() -> bookService.findById(EXISTING_BOOK_ID));
+        assertThat(readable.getId()).isEqualTo(EXISTING_BOOK_ID);
+        BookDto update = new BookDto();
+        update.setId(EXISTING_BOOK_ID);
+        update.setTitle("New Title");
+        update.setAuthor(readable.getAuthor());
+        update.setGenres(readable.getGenres());
+        assertThrows(AccessDeniedException.class, () -> bookService.update(update));
+        assertThrows(AccessDeniedException.class, () -> bookService.deleteById(EXISTING_BOOK_ID));
+    }
+
     private BookDto getNewBookDto() {
         Author author = authorService.findById(1L);
         Genre genre = genreService.findById(1L);
