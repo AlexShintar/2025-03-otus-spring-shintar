@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:maindb
+    url: jdbc:h2:mem:maindb;DB_CLOSE_DELAY=-1
   liquibase:
     enabled: true
     change-log: db.changelog-master.xml
@@ -18,6 +18,21 @@ spring:
         enabled: true
 
 logging:
+  file:
+    name: ./logs/app.log
   level:
     ROOT: ERROR
     org.apache.catalina.connector.ClientAbortException: OFF
+
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,metrics,loggers,logfile
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: library-app
