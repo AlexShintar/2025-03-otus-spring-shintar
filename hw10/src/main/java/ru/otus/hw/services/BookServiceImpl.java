@@ -17,8 +17,12 @@ import ru.otus.hw.repositories.AuthorRepository;
 import ru.otus.hw.repositories.BookRepository;
 import ru.otus.hw.repositories.GenreRepository;
 
+import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static org.springframework.util.CollectionUtils.isEmpty;
 
 @RequiredArgsConstructor
 @Service
@@ -38,7 +42,8 @@ public class BookServiceImpl implements BookService {
     @Transactional(readOnly = true)
     @Override
     public BookDto findById(long id) {
-        Book book = findByIdOrThrow(bookRepository.findById(id), Book.class, id);
+        Book book = bookRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Book with id %d not found".formatted(id)));
         return bookMapper.toDto(book);
     }
 
@@ -53,12 +58,8 @@ public class BookServiceImpl implements BookService {
     @Transactional
     @Override
     public BookDto insert(BookCreateDto form) {
-        Author author = findByIdOrThrow(authorRepository.findById(form.authorId()), Author.class, form.authorId());
-
-        List<Genre> genres = form.genreIds().stream()
-                .distinct()
-                .map(id -> findByIdOrThrow(genreRepository.findById(id), Genre.class, id))
-                .toList();
+        Author author = findAuthor(form.authorId());
+        List<Genre> genres = findGenres(form.genreIds());
 
         Book book = bookMapper.toEntity(
                 form,
@@ -73,21 +74,17 @@ public class BookServiceImpl implements BookService {
     @Transactional
     @Override
     public BookDto update(BookUpdateDto form, long id) {
-        Book book = findByIdOrThrow(bookRepository.findById(id), Book.class, id);
-        Author author = findByIdOrThrow(authorRepository.findById(form.authorId()), Author.class, form.authorId());
+        Book bookToUpdate = bookRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Book with id %d not found".formatted(id)));
 
-        List<Genre> genres = form.genreIds().stream()
-                .distinct()
-                .map(gid -> findByIdOrThrow(genreRepository.findById(gid), Genre.class, gid))
-                .toList();
+        Author author = findAuthor(form.authorId());
+        List<Genre> genres = findGenres(form.genreIds());
 
-        book.setTitle(form.title());
-        book.setAuthor(author);
-        book.getGenres().clear();
-        book.getGenres().addAll(genres);
+        bookToUpdate.setTitle(form.title());
+        bookToUpdate.setAuthor(author);
+        bookToUpdate.setGenres(genres);
 
-        Book updated = bookRepository.save(book);
-        return bookMapper.toDto(updated);
+        return bookMapper.toDto(bookToUpdate);
     }
 
     @Transactional
@@ -96,8 +93,24 @@ public class BookServiceImpl implements BookService {
         bookRepository.deleteById(id);
     }
 
-    private <T> T findByIdOrThrow(Optional<T> optional, Class<?> entityClass, long id) {
-        return optional.orElseThrow(() ->
-                new EntityNotFoundException(entityClass.getSimpleName() + " not found: " + id));
+    private Author findAuthor(long authorId) {
+        return authorRepository.findById(authorId)
+                .orElseThrow(() -> new EntityNotFoundException("Author with id %d not found".formatted(authorId)));
+    }
+
+    private List<Genre> findGenres(List<Long> genreIdsInput) {
+        if (isEmpty(genreIdsInput)) {
+            throw new IllegalArgumentException("Genres ids must not be null or empty");
+        }
+        Set<Long> genreIds = new HashSet<>(genreIdsInput);
+        List<Genre> genres = genreRepository.findAllById(genreIds);
+        if (genres.size() != genreIds.size()) {
+            Set<Long> foundIds = genres.stream().map(Genre::getId).collect(Collectors.toSet());
+            List<Long> missingIds = genreIds.stream()
+                    .filter(id -> !foundIds.contains(id))
+                    .toList();
+            throw new EntityNotFoundException("Genres with ids %s not found".formatted(missingIds));
+        }
+        return genres;
     }
 }
