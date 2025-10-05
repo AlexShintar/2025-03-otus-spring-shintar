@@ -3,152 +3,198 @@ package ru.otus.hw.controllers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
-import org.springframework.context.annotation.Import;
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.otus.hw.dto.AuthorDto;
 import ru.otus.hw.dto.BookCreateDto;
 import ru.otus.hw.dto.BookDto;
 import ru.otus.hw.dto.BookUpdateDto;
 import ru.otus.hw.dto.GenreDto;
-import ru.otus.hw.mapper.BookMapper;
-import ru.otus.hw.rest.BookRestRouter;
-import ru.otus.hw.rest.handlers.BookHandler;
-import ru.otus.hw.services.BookService;
 
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("Функциональный эндпоинт для работы с книгами")
-@WebFluxTest
-@Import({BookRestRouter.class, BookHandler.class})
-@TestPropertySource(properties = "mongock.enabled=false")
+@DisplayName("Интеграционный тест книг")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureWebTestClient
+@ActiveProfiles("test")
 class BookRouterTest {
 
     @Autowired
     private WebTestClient webTestClient;
 
-    @MockitoBean
-    private BookService bookService;
-
-    @MockitoBean
-    private BookMapper bookMapper;
-
-    private final AuthorDto author = new AuthorDto("507f1f77bcf86cd799439011", "Author_1");
-    private final List<GenreDto> genres = List.of(
-            new GenreDto("507f1f77bcf86cd799439021", "Genre_1")
-    );
-
-    @DisplayName("должен возвращать список всех книг")
     @Test
-    void shouldReturnAllBooks() {
-        var books = List.of(
-                new BookDto("507f1f77bcf86cd799439031", "BookTitle_1", author, genres),
-                new BookDto("507f1f77bcf86cd799439032", "BookTitle_2", author, genres)
-        );
-        when(bookService.findAll()).thenReturn(Flux.fromIterable(books));
-
-        webTestClient.get().uri("/api/v2/book")
+    @DisplayName("должен возвращать список всех книг")
+    void shouldReturnAllBooksFromSeeds() {
+        var books = webTestClient.get().uri("/api/v2/book")
+                .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus().isOk()
-                .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
                 .expectBodyList(BookDto.class)
-                .isEqualTo(books);
-        verify(bookService).findAll();
+                .returnResult()
+                .getResponseBody();
+
+        assertThat(books).isNotNull().hasSize(3);
+        assertThat(books.stream().map(BookDto::title))
+                .containsExactlyInAnyOrder("BookTitle_1", "BookTitle_2", "BookTitle_3");
     }
 
-    @DisplayName("должен возвращать книгу по id")
     @Test
+    @DisplayName("должен возвращать книгу по id")
     void shouldReturnBookById() {
-        String bookId = "507f1f77bcf86cd799439031";
-        var book = new BookDto(bookId, "Test Book", author, genres);
-        when(bookService.findById(bookId)).thenReturn(Mono.just(book));
+        var list = webTestClient.get().uri("/api/v2/book")
+                .exchange()
+                .returnResult(BookDto.class)
+                .getResponseBody()
+                .collectList()
+                .block();
 
-        webTestClient.get().uri("/api/v2/book/{id}", bookId)
+        assertThat(list).isNotNull().isNotEmpty();
+        var first = list.get(0);
+
+        webTestClient.get().uri("/api/v2/book/{id}", first.id())
+                .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(BookDto.class)
-                .isEqualTo(book);
-        verify(bookService).findById(bookId);
+                .value(b -> {
+                    assertThat(b.id()).isEqualTo(first.id());
+                    assertThat(b.title()).isNotBlank();
+                });
     }
 
     @DisplayName("должен возвращать 404 Not Found, если книга по id не найдена")
     @Test
     void shouldReturnNotFoundForNonExistentBook() {
-        String nonExistentId = "507f1f77bcf86cd799439099";
-        when(bookService.findById(nonExistentId)).thenReturn(Mono.empty());
+        String nonExistentId = "ffffffffffffffffffffffff";
 
         webTestClient.get().uri("/api/v2/book/{id}", nonExistentId)
                 .exchange()
                 .expectStatus().isNotFound()
-                .expectBody().isEmpty();
-        verify(bookService).findById(nonExistentId);
+                .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML)
+                .expectBody(String.class)
+                .value(body -> {
+                });
     }
 
-    @DisplayName("должен создавать книгу")
     @Test
+    @DisplayName("должен создавать книгу")
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
     void shouldCreateBook() {
-        String createdBookId = "507f1f77bcf86cd799439031";
-        String authorId = "507f1f77bcf86cd799439011";
-        String genreId = "507f1f77bcf86cd799439021";
+        var authors = webTestClient.get().uri("/api/v2/author")
+                .exchange()
+                .returnResult(AuthorDto.class)
+                .getResponseBody()
+                .collectList()
+                .block();
+        var genres = webTestClient.get().uri("/api/v2/genre")
+                .exchange()
+                .returnResult(GenreDto.class)
+                .getResponseBody()
+                .collectList()
+                .block();
 
-        var createDto = new BookCreateDto("Test Book", authorId, List.of(genreId));
-        var expectedDto = new BookDto(createdBookId, "Test Book", author, genres);
+        assertThat(authors).isNotNull().isNotEmpty();
+        assertThat(genres).isNotNull().isNotEmpty();
 
-        when(bookService.insert(any(BookCreateDto.class))).thenReturn(Mono.just(expectedDto));
+        var author = authors.get(0);
+        var genre = genres.get(0);
+
+        var payload = new BookCreateDto("Test Book", author.id(), List.of(genre.id()));
 
         webTestClient.post().uri("/api/v2/book")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(createDto)
+                .body(Mono.just(payload), BookCreateDto.class)
                 .exchange()
                 .expectStatus().isCreated()
-                .expectHeader().location("/api/v2/book/" + createdBookId)
+                .expectHeader().exists("Location")
                 .expectBody(BookDto.class)
-                .isEqualTo(expectedDto);
-        verify(bookService).insert(any(BookCreateDto.class));
+                .value(b -> {
+                    assertThat(b.id()).isNotBlank();
+                    assertThat(b.title()).isEqualTo("Test Book");
+                    assertThat(b.author().id()).isEqualTo(author.id());
+                    assertThat(b.genres()).extracting(GenreDto::id).contains(genre.id());
+                });
     }
 
-    @DisplayName("должен обновлять книгу")
     @Test
+    @DisplayName("должен обновлять книгу")
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
     void shouldUpdateBook() {
-        String bookId = "507f1f77bcf86cd799439031";
-        String authorId = "507f1f77bcf86cd799439011";
-        String genreId = "507f1f77bcf86cd799439021";
+        var books = webTestClient.get().uri("/api/v2/book")
+                .exchange()
+                .returnResult(BookDto.class)
+                .getResponseBody()
+                .collectList()
+                .block();
+        assertThat(books).isNotNull().isNotEmpty();
+        var book = books.get(0);
 
-        var updateDto = new BookUpdateDto("Updated Book", authorId, List.of(genreId));
-        var expectedDto = new BookDto(bookId, "Updated Book", author, genres);
+        var authors = webTestClient.get().uri("/api/v2/author")
+                .exchange()
+                .returnResult(AuthorDto.class)
+                .getResponseBody()
+                .collectList()
+                .block();
+        var genres = webTestClient.get().uri("/api/v2/genre")
+                .exchange()
+                .returnResult(GenreDto.class)
+                .getResponseBody()
+                .collectList()
+                .block();
 
-        when(bookService.update(eq(updateDto), eq(bookId))).thenReturn(Mono.just(expectedDto));
+        assertThat(authors).isNotNull().hasSizeGreaterThanOrEqualTo(1);
+        assertThat(genres).isNotNull().isNotEmpty();
 
-        webTestClient.put().uri("/api/v2/book/{id}", bookId)
+        var newAuthor = authors.stream()
+                .filter(a -> !a.id().equals(book.author().id()))
+                .findFirst()
+                .orElse(authors.get(0));
+        var newGenre = genres.get(0);
+
+        var payload = new BookUpdateDto("Updated Book", newAuthor.id(), List.of(newGenre.id()));
+
+        webTestClient.put().uri("/api/v2/book/{id}", book.id())
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(updateDto)
+                .bodyValue(payload)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(BookDto.class)
-                .isEqualTo(expectedDto);
-        verify(bookService).update(eq(updateDto), eq(bookId));
+                .value(updated -> {
+                    assertThat(updated.id()).isEqualTo(book.id());
+                    assertThat(updated.title()).isEqualTo("Updated Book");
+                    assertThat(updated.author().id()).isEqualTo(newAuthor.id());
+                    assertThat(updated.genres()).extracting(GenreDto::id).contains(newGenre.id());
+                });
     }
 
-    @DisplayName("должен удалять книгу")
     @Test
+    @DisplayName("должен удалять книгу")
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
     void shouldDeleteBook() {
-        String bookId = "507f1f77bcf86cd799439031";
-        when(bookService.deleteById(bookId)).thenReturn(Mono.empty());
+        var first = webTestClient.get().uri("/api/v2/book")
+                .exchange()
+                .returnResult(BookDto.class)
+                .getResponseBody()
+                .collectList()
+                .block();
+
+        assertThat(first).isNotNull().isNotEmpty();
+        var bookId = first.get(0).id();
 
         webTestClient.delete().uri("/api/v2/book/{id}", bookId)
                 .exchange()
                 .expectStatus().isNoContent()
                 .expectBody().isEmpty();
-        verify(bookService).deleteById(bookId);
+
+        webTestClient.get().uri("/api/v2/book/{id}", bookId)
+                .exchange()
+                .expectStatus().isNotFound();
     }
 }

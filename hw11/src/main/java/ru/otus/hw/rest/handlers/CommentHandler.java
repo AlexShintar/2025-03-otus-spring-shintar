@@ -20,7 +20,7 @@ public class CommentHandler {
     private final CommentMapper commentMapper;
 
     public Mono<ServerResponse> getComments(ServerRequest request) {
-        String bookId = request.pathVariable("bookId"); // String
+        String bookId = request.pathVariable("bookId");
         return ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(commentService.findAllByBookId(bookId)
@@ -28,7 +28,7 @@ public class CommentHandler {
     }
 
     public Mono<ServerResponse> addComment(ServerRequest request) {
-        String bookId = request.pathVariable("bookId"); // String
+        String bookId = request.pathVariable("bookId");
         return request.bodyToMono(CommentDto.class)
                 .flatMap(commentDto -> commentService.insert(commentDto.content(), bookId))
                 .map(commentMapper::toDto)
@@ -39,8 +39,8 @@ public class CommentHandler {
     }
 
     public Mono<ServerResponse> updateComment(ServerRequest request) {
-        String bookId = request.pathVariable("bookId"); // String
-        String commentId = request.pathVariable("commentId"); // String
+        String bookId = request.pathVariable("bookId");
+        String commentId = request.pathVariable("commentId");
         return request.bodyToMono(CommentDto.class)
                 .flatMap(commentDto -> commentService.update(commentId, bookId, commentDto.content()))
                 .map(commentMapper::toDto)
@@ -50,8 +50,8 @@ public class CommentHandler {
     }
 
     public Mono<ServerResponse> deleteComment(ServerRequest request) {
-        String bookId = request.pathVariable("bookId"); // String
-        String commentId = request.pathVariable("commentId"); // String
+        String bookId = request.pathVariable("bookId");
+        String commentId = request.pathVariable("commentId");
         return commentService.deleteById(commentId, bookId)
                 .then(ServerResponse.noContent().build());
     }

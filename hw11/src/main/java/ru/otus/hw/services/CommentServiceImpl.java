@@ -41,7 +41,7 @@ public class CommentServiceImpl implements CommentService {
                         new EntityNotFoundException("Comment not found: " + commentId)
                 ))
                 .flatMap(existingComment -> {
-                    // Проверяем, что комментарий принадлежит указанной книге
+
                     if (!existingComment.getBook().getId().equals(bookId)) {
                         return Mono.error(new EntityNotFoundException(
                                 "Comment " + commentId + " not found for book " + bookId
@@ -60,7 +60,7 @@ public class CommentServiceImpl implements CommentService {
                         new EntityNotFoundException("Comment not found: " + commentId)
                 ))
                 .flatMap(comment -> {
-                    // Проверяем, что комментарий принадлежит указанной книге
+
                     if (!comment.getBook().getId().equals(bookId)) {
                         return Mono.error(new EntityNotFoundException(
                                 "Comment " + commentId + " not found for book " + bookId

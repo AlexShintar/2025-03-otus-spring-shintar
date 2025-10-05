@@ -53,7 +53,7 @@ public class BookServiceImpl implements BookService {
                     Author author = tuple.getT1();
                     Set<Genre> genres = tuple.getT2();
 
-                    // Создаём книгу с embedded author и genres
+
                     Book book = new Book(form.title(), author, genres);
 
                     return bookRepository.save(book)
@@ -77,7 +77,7 @@ public class BookServiceImpl implements BookService {
                     Author author = tuple.getT2().getT1();
                     Set<Genre> genres = tuple.getT2().getT2();
 
-                    // Обновляем поля существующей книги
+
                     existingBook.setTitle(form.title());
                     existingBook.setAuthor(author);
                     existingBook.setGenres(genres);
