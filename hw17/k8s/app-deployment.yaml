@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: library-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: library-service }
+  template:
+    metadata:
+      labels: { app: library-service }
+    spec:
+      containers:
+        - name: library-service
+          image: hw17-docker:latest
+          imagePullPolicy: IfNotPresent   # minikube = Never
+          env:
+            - { name: SPRING_PROFILES_ACTIVE, value: "pg" }
+            - { name: SPRING_DATASOURCE_URL, value: "jdbc:postgresql://postgres:5432/librarydb" }
+            - { name: SPRING_DATASOURCE_USERNAME, value: "postgres" }
+            - { name: SPRING_DATASOURCE_PASSWORD, value: "postgres" }
+          ports:
+            - { containerPort: 8080 }
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: 8080 }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: 8080 }
+            initialDelaySeconds: 40
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
