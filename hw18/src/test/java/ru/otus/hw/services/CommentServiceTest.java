@@ -7,6 +7,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import ru.otus.hw.mapper.CommentMapper;
@@ -37,6 +38,9 @@ class CommentServiceTest {
 
     @Autowired
     private CommentMapper commentMapper;
+
+    @MockitoBean
+    private ExternalBookRecommendationService externalBookRecommendationService;
 
     @DisplayName("должен возвращать комментарий по id")
     @ParameterizedTest(name = "id = {0}")

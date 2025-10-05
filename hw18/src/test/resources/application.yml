@@ -7,3 +7,32 @@ spring:
   sql:
     init:
       mode: never
+
+external:
+  book-recommendation-service:
+    url: http://localhost:8080
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: false
+        slidingWindowSize: 100
+        failureRateThreshold: 100
+    instances:
+      externalServiceCB:
+        baseConfig: default
+  retry:
+    configs:
+      default:
+        maxAttempts: 1
+    instances:
+      externalServiceRetry:
+        baseConfig: default
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 10s
+    instances:
+      externalServiceTL:
+        baseConfig: default

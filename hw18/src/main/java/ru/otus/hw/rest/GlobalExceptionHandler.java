@@ -1,5 +1,7 @@
 package ru.otus.hw.rest;
 
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -19,6 +21,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ValidationErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
         log.error("Validation failed: {}", ex.getMessage(), ex);
@@ -35,6 +38,21 @@ public class GlobalExceptionHandler {
         log.error("Entity not found: {}", ex.getMessage(), ex);
         return ResponseEntity.status(404)
                 .body(Map.of("message", "Requested object not found"));
+    }
+
+    // ✅ добавили обработчики для Resilience4j сценариев
+    @ExceptionHandler(RequestNotPermitted.class)
+    public ResponseEntity<?> handleRateLimiter(RequestNotPermitted ex) {
+        log.error("Rate limiter triggered: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(Map.of("message", "Too many requests. Please try again later."));
+    }
+
+    @ExceptionHandler(CallNotPermittedException.class)
+    public ResponseEntity<?> handleCircuitBreaker(CallNotPermittedException ex) {
+        log.error("Circuit breaker open: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(Map.of("message", "Service temporarily unavailable. Please try again later."));
     }
 
     @ExceptionHandler(Exception.class)

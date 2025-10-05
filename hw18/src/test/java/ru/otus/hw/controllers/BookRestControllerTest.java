@@ -8,26 +8,16 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.http.MediaType;
-import ru.otus.hw.dto.AuthorDto;
-import ru.otus.hw.dto.BookCreateDto;
-import ru.otus.hw.dto.BookDto;
-import ru.otus.hw.dto.BookUpdateDto;
-import ru.otus.hw.dto.GenreDto;
+import ru.otus.hw.dto.*;
 import ru.otus.hw.rest.BookRestController;
 import ru.otus.hw.services.BookService;
+import ru.otus.hw.services.ExternalBookRecommendationService;
 
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @DisplayName("REST контроллер для работы с книгами")
@@ -39,6 +29,9 @@ class BookRestControllerTest {
 
     @MockitoBean
     private BookService bookService;
+
+    @MockitoBean
+    private ExternalBookRecommendationService externalBookRecommendationService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -68,6 +61,9 @@ class BookRestControllerTest {
     void shouldReturnBookById() throws Exception {
         BookDto book = new BookDto(1L, "Test Book", author, genres);
         when(bookService.findById(1L)).thenReturn(book);
+
+        when(externalBookRecommendationService.getRecommendation(anyLong()))
+                .thenReturn(new BookRecommendationDto(1L, "Recommended", 4.5));
 
         mockMvc.perform(get("/api/v1/book/{id}", 1L))
                 .andExpect(status().isOk())
