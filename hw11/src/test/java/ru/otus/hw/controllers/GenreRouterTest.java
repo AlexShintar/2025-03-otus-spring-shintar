@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.when;
 @DisplayName("Функциональный эндпоинт для работы с жанрами")
 @WebFluxTest
 @Import({GenreRestRouter.class, GenreHandler.class})
+@TestPropertySource(properties = "mongock.enabled=false")
 class GenreRouterTest {
 
     @Autowired
@@ -41,14 +43,14 @@ class GenreRouterTest {
     @Test
     void shouldReturnAllGenres() {
         List<Genre> genresFromDb = List.of(
-                new Genre(1L, "Genre_1"),
-                new Genre(2L, "Genre_2"),
-                new Genre(3L, "Genre_3")
+                new Genre("507f1f77bcf86cd799439021", "Genre_1"),
+                new Genre("507f1f77bcf86cd799439022", "Genre_2"),
+                new Genre("507f1f77bcf86cd799439023", "Genre_3")
         );
         List<GenreDto> expectedDtos = List.of(
-                new GenreDto(1L, "Genre_1"),
-                new GenreDto(2L, "Genre_2"),
-                new GenreDto(3L, "Genre_3")
+                new GenreDto("507f1f77bcf86cd799439021", "Genre_1"),
+                new GenreDto("507f1f77bcf86cd799439022", "Genre_2"),
+                new GenreDto("507f1f77bcf86cd799439023", "Genre_3")
         );
 
         when(genreService.findAll()).thenReturn(Flux.fromIterable(genresFromDb));

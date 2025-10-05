@@ -20,7 +20,7 @@ public class CommentHandler {
     private final CommentMapper commentMapper;
 
     public Mono<ServerResponse> getComments(ServerRequest request) {
-        long bookId = Long.parseLong(request.pathVariable("bookId"));
+        String bookId = request.pathVariable("bookId"); // String
         return ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(commentService.findAllByBookId(bookId)
@@ -28,7 +28,7 @@ public class CommentHandler {
     }
 
     public Mono<ServerResponse> addComment(ServerRequest request) {
-        long bookId = Long.parseLong(request.pathVariable("bookId"));
+        String bookId = request.pathVariable("bookId"); // String
         return request.bodyToMono(CommentDto.class)
                 .flatMap(commentDto -> commentService.insert(commentDto.content(), bookId))
                 .map(commentMapper::toDto)
@@ -39,8 +39,8 @@ public class CommentHandler {
     }
 
     public Mono<ServerResponse> updateComment(ServerRequest request) {
-        long bookId = Long.parseLong(request.pathVariable("bookId"));
-        long commentId = Long.parseLong(request.pathVariable("commentId"));
+        String bookId = request.pathVariable("bookId"); // String
+        String commentId = request.pathVariable("commentId"); // String
         return request.bodyToMono(CommentDto.class)
                 .flatMap(commentDto -> commentService.update(commentId, bookId, commentDto.content()))
                 .map(commentMapper::toDto)
@@ -50,8 +50,8 @@ public class CommentHandler {
     }
 
     public Mono<ServerResponse> deleteComment(ServerRequest request) {
-        long bookId = Long.parseLong(request.pathVariable("bookId"));
-        long commentId = Long.parseLong(request.pathVariable("commentId"));
+        String bookId = request.pathVariable("bookId"); // String
+        String commentId = request.pathVariable("commentId"); // String
         return commentService.deleteById(commentId, bookId)
                 .then(ServerResponse.noContent().build());
     }

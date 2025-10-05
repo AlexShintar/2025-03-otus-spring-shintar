@@ -1,9 +1,22 @@
 package ru.otus.hw.models;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Column;
-import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-@Table("authors")
-public record Author(@Id Long id, @Column("full_name") String fullName) {
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Document(collection = "authors")
+public class Author {
+    @Id
+    private String id;
+
+    private String fullName;
+
+    public Author(String fullName) {
+        this.fullName = fullName;
+    }
 }

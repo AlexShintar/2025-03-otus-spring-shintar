@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.when;
 @DisplayName("Функциональный эндпоинт для работы с книгами")
 @WebFluxTest
 @Import({BookRestRouter.class, BookHandler.class})
+@TestPropertySource(properties = "mongock.enabled=false")
 class BookRouterTest {
 
     @Autowired
@@ -41,15 +43,17 @@ class BookRouterTest {
     @MockitoBean
     private BookMapper bookMapper;
 
-    private final AuthorDto author = new AuthorDto(1L, "Author_1");
-    private final List<GenreDto> genres = List.of(new GenreDto(1L, "Genre_1"));
+    private final AuthorDto author = new AuthorDto("507f1f77bcf86cd799439011", "Author_1");
+    private final List<GenreDto> genres = List.of(
+            new GenreDto("507f1f77bcf86cd799439021", "Genre_1")
+    );
 
     @DisplayName("должен возвращать список всех книг")
     @Test
     void shouldReturnAllBooks() {
         var books = List.of(
-                new BookDto(1L, "BookTitle_1", author, genres),
-                new BookDto(2L, "BookTitle_2", author, genres)
+                new BookDto("507f1f77bcf86cd799439031", "BookTitle_1", author, genres),
+                new BookDto("507f1f77bcf86cd799439032", "BookTitle_2", author, genres)
         );
         when(bookService.findAll()).thenReturn(Flux.fromIterable(books));
 
@@ -65,34 +69,41 @@ class BookRouterTest {
     @DisplayName("должен возвращать книгу по id")
     @Test
     void shouldReturnBookById() {
-        var book = new BookDto(1L, "Test Book", author, genres);
-        when(bookService.findById(1L)).thenReturn(Mono.just(book));
+        String bookId = "507f1f77bcf86cd799439031";
+        var book = new BookDto(bookId, "Test Book", author, genres);
+        when(bookService.findById(bookId)).thenReturn(Mono.just(book));
 
-        webTestClient.get().uri("/api/v2/book/{id}", 1L)
+        webTestClient.get().uri("/api/v2/book/{id}", bookId)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(BookDto.class)
                 .isEqualTo(book);
-        verify(bookService).findById(1L);
+        verify(bookService).findById(bookId);
     }
 
     @DisplayName("должен возвращать 404 Not Found, если книга по id не найдена")
     @Test
     void shouldReturnNotFoundForNonExistentBook() {
-        when(bookService.findById(99L)).thenReturn(Mono.empty());
+        String nonExistentId = "507f1f77bcf86cd799439099";
+        when(bookService.findById(nonExistentId)).thenReturn(Mono.empty());
 
-        webTestClient.get().uri("/api/v2/book/{id}", 99L)
+        webTestClient.get().uri("/api/v2/book/{id}", nonExistentId)
                 .exchange()
                 .expectStatus().isNotFound()
                 .expectBody().isEmpty();
-        verify(bookService).findById(99L);
+        verify(bookService).findById(nonExistentId);
     }
 
     @DisplayName("должен создавать книгу")
     @Test
     void shouldCreateBook() {
-        var createDto = new BookCreateDto("Test Book", 1L, List.of(1L));
-        var expectedDto = new BookDto(1L, "Test Book", author, genres);
+        String createdBookId = "507f1f77bcf86cd799439031";
+        String authorId = "507f1f77bcf86cd799439011";
+        String genreId = "507f1f77bcf86cd799439021";
+
+        var createDto = new BookCreateDto("Test Book", authorId, List.of(genreId));
+        var expectedDto = new BookDto(createdBookId, "Test Book", author, genres);
+
         when(bookService.insert(any(BookCreateDto.class))).thenReturn(Mono.just(expectedDto));
 
         webTestClient.post().uri("/api/v2/book")
@@ -100,7 +111,7 @@ class BookRouterTest {
                 .bodyValue(createDto)
                 .exchange()
                 .expectStatus().isCreated()
-                .expectHeader().location("/api/v2/book/1")
+                .expectHeader().location("/api/v2/book/" + createdBookId)
                 .expectBody(BookDto.class)
                 .isEqualTo(expectedDto);
         verify(bookService).insert(any(BookCreateDto.class));
@@ -109,9 +120,13 @@ class BookRouterTest {
     @DisplayName("должен обновлять книгу")
     @Test
     void shouldUpdateBook() {
-        long bookId = 1L;
-        var updateDto = new BookUpdateDto("Updated Book", 1L, List.of(1L));
+        String bookId = "507f1f77bcf86cd799439031";
+        String authorId = "507f1f77bcf86cd799439011";
+        String genreId = "507f1f77bcf86cd799439021";
+
+        var updateDto = new BookUpdateDto("Updated Book", authorId, List.of(genreId));
         var expectedDto = new BookDto(bookId, "Updated Book", author, genres);
+
         when(bookService.update(eq(updateDto), eq(bookId))).thenReturn(Mono.just(expectedDto));
 
         webTestClient.put().uri("/api/v2/book/{id}", bookId)
@@ -127,7 +142,7 @@ class BookRouterTest {
     @DisplayName("должен удалять книгу")
     @Test
     void shouldDeleteBook() {
-        long bookId = 1L;
+        String bookId = "507f1f77bcf86cd799439031";
         when(bookService.deleteById(bookId)).thenReturn(Mono.empty());
 
         webTestClient.delete().uri("/api/v2/book/{id}", bookId)

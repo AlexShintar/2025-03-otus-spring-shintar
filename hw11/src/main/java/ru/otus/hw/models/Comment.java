@@ -1,9 +1,35 @@
 package ru.otus.hw.models;
 
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.relational.core.mapping.Column;
-import org.springframework.data.relational.core.mapping.Table;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-@Table("comments")
-public record Comment(@Id Long id, @Column("comment_content") String content, @Column("book_id") Long bookId) {
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Document(collection = "comments")
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(onlyExplicitlyIncluded = true)
+public class Comment {
+    @Id
+    @EqualsAndHashCode.Include
+    @ToString.Include
+    private String id;
+
+    private String content;
+
+    @DBRef(lazy = true)
+    private Book book;
+
+    public Comment(String content, Book book) {
+        this.content = content;
+        this.book = book;
+    }
 }

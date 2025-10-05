@@ -1,7 +1,7 @@
 package ru.otus.hw.repositories;
 
-import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
 import ru.otus.hw.models.Genre;
 
-public interface GenreRepository extends ReactiveCrudRepository<Genre, Long> {
+public interface GenreRepository extends ReactiveMongoRepository<Genre, String> {
 }

@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.when;
 @DisplayName("Функциональный эндпоинт для работы с авторами")
 @WebFluxTest
 @Import({AuthorRestRouter.class, AuthorHandler.class})
+@TestPropertySource(properties = "mongock.enabled=false")
 class AuthorRouterTest {
 
     @Autowired
@@ -37,17 +39,16 @@ class AuthorRouterTest {
     @MockitoBean
     private AuthorMapper authorMapper;
 
-
     @DisplayName("должен возвращать список всех авторов")
     @Test
     void shouldReturnAllAuthors() {
         List<Author> authorsFromDb = List.of(
-                new Author(1L, "Author_1"),
-                new Author(2L, "Author_2")
+                new Author("507f1f77bcf86cd799439011", "Author_1"),
+                new Author("507f1f77bcf86cd799439012", "Author_2")
         );
         List<AuthorDto> authorDtos = List.of(
-                new AuthorDto(1L, "Author_1"),
-                new AuthorDto(2L, "Author_2")
+                new AuthorDto("507f1f77bcf86cd799439011", "Author_1"),
+                new AuthorDto("507f1f77bcf86cd799439012", "Author_2")
         );
 
         when(authorService.findAll()).thenReturn(Flux.fromIterable(authorsFromDb));

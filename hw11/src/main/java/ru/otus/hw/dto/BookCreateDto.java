@@ -12,9 +12,9 @@ public record BookCreateDto(
         String title,
 
         @NotNull(message = "Please select an author")
-        Long authorId,
+        String authorId,
 
         @NotNull(message = "Please select at least one genre")
         @Size(min = 1, message = "Please select at least one genre")
-        List<@NotNull(message = "Genre id cannot be null") Long> genreIds) {
+        List<@NotNull(message = "Genre id cannot be null") String> genreIds) {
 }

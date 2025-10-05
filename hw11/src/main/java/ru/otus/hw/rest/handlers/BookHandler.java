@@ -26,7 +26,7 @@ public class BookHandler {
     }
 
     public Mono<ServerResponse> getBookById(ServerRequest request) {
-        long id = Long.parseLong(request.pathVariable("id"));
+        String id = request.pathVariable("id"); // String вместо Long
 
         return bookService.findById(id)
                 .flatMap(bookDto -> ServerResponse.ok()
@@ -45,7 +45,7 @@ public class BookHandler {
     }
 
     public Mono<ServerResponse> updateBook(ServerRequest request) {
-        long id = Long.parseLong(request.pathVariable("id"));
+        String id = request.pathVariable("id"); // String вместо Long
         return request.bodyToMono(BookUpdateDto.class)
                 .flatMap(dto -> bookService.update(dto, id))
                 .flatMap(updated -> ServerResponse.ok()
@@ -55,7 +55,7 @@ public class BookHandler {
     }
 
     public Mono<ServerResponse> deleteBook(ServerRequest request) {
-        long id = Long.parseLong(request.pathVariable("id"));
+        String id = request.pathVariable("id"); // String вместо Long
 
         return bookService.deleteById(id)
                 .then(ServerResponse.noContent().build());
