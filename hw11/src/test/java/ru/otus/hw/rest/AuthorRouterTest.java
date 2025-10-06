@@ -1,4 +1,4 @@
-package ru.otus.hw.controllers;
+package ru.otus.hw.rest;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
