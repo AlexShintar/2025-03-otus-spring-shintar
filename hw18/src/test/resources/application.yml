@@ -1,0 +1,40 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=TRUE
+  liquibase:
+    enabled: true
+    change-log: db.changelog-test.xml
+    drop-first: true
+  sql:
+    init:
+      mode: never
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: none
+
+external:
+  book-recommendation-service:
+    url: http://localhost:8080
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      externalServiceCB:
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        registerHealthIndicator: false
+
+  retry:
+    instances:
+      externalServiceRetry:
+        max-attempts: 3
+        wait-duration: 200ms
+
+logging:
+  level:
+    root: WARN
+    ru.otus.hw: INFO

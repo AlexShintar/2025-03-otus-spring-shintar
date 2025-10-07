@@ -1,0 +1,63 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:maindb
+  liquibase:
+    enabled: true
+    change-log: db.changelog-master.xml
+  sql:
+    init:
+      mode: never
+  jpa:
+    generate-ddl: false
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+  mvc:
+    hiddenmethod:
+      filter:
+        enabled: true
+
+logging:
+  level:
+    ROOT: ERROR
+    org.apache.catalina.connector.ClientAbortException: OFF
+
+external:
+  book-recommendation-service:
+    url: http://localhost:8080
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      externalServiceCB:
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        registerHealthIndicator: true
+
+  retry:
+    instances:
+      externalServiceRetry:
+        max-attempts: 3
+        wait-duration: 200ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 1.5
+        enable-randomized-wait: true
+        randomized-wait-factor: 0.5
+
+  timelimiter:
+    instances:
+      externalServiceTL:
+        timeout-duration: 5s
+        cancel-running-future: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env,threaddump,loggers,circuitbreakers,retries,timelimiters
+  endpoint:
+    health:
+      show-details: always
