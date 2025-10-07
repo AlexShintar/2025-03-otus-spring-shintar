@@ -1,5 +1,7 @@
 package ru.otus.hw.services;
 
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -56,6 +58,14 @@ class BookServiceTest {
 
     @MockitoBean
     private ExternalBookRecommendationService externalBookRecommendationService;
+
+    @Autowired
+    private CircuitBreakerRegistry circuitBreakerRegistry;
+
+    @BeforeEach
+    void setUp() {
+        circuitBreakerRegistry.circuitBreaker("externalServiceCB").reset();
+    }
 
     @DisplayName("должен возвращать книгу по id")
     @ParameterizedTest(name = "id = {0}")

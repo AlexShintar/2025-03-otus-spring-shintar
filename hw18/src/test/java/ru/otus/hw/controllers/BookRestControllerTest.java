@@ -14,6 +14,7 @@ import ru.otus.hw.services.BookService;
 import ru.otus.hw.services.ExternalBookRecommendationService;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -63,7 +64,8 @@ class BookRestControllerTest {
         when(bookService.findById(1L)).thenReturn(book);
 
         when(externalBookRecommendationService.getRecommendation(anyLong()))
-                .thenReturn(new BookRecommendationDto(1L, "Recommended", 4.5));
+                .thenReturn(CompletableFuture.completedFuture(
+                        new BookRecommendationDto(1L, "Recommended", 4.5)));
 
         mockMvc.perform(get("/api/v1/book/{id}", 1L))
                 .andExpect(status().isOk())
@@ -83,10 +85,11 @@ class BookRestControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDto)))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", "/api/books/1"))
+                .andExpect(header().string("Location", "/api/v1/book/1"))
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.title").value("Test Book"));
     }
+
 
     @DisplayName("должен обновлять книгу с валидными данными")
     @Test

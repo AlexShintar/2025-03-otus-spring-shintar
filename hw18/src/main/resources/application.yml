@@ -47,11 +47,17 @@ resilience4j:
         enable-randomized-wait: true
         randomized-wait-factor: 0.5
 
+  timelimiter:
+    instances:
+      externalServiceTL:
+        timeout-duration: 5s
+        cancel-running-future: true
+
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,env,threaddump,loggers,circuitbreakers
+        include: health,info,metrics,env,threaddump,loggers,circuitbreakers,retries,timelimiters
   endpoint:
     health:
       show-details: always

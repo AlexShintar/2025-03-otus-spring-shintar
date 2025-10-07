@@ -22,6 +22,7 @@ import ru.otus.hw.services.ExternalBookRecommendationService;
 
 import java.net.URI;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @RestController
@@ -37,24 +38,33 @@ public class BookRestController {
         return bookService.findAll();
     }
 
+    /**
+     * При вызове дополнительно запрашивает рекомендацию у внешнего сервиса (CB/Retry/TimeLimiter).
+     * Можно обогатить BookDto рекомендацией.
+     */
     @GetMapping("/api/v1/book/{id}")
     public BookDto getBookById(@PathVariable long id) {
         BookDto book = bookService.findById(id);
 
-        try {
-            BookRecommendationDto recommendation = recommendationService.getRecommendation(id);
-            log.info("Got recommendation: {}", recommendation);
-        } catch (Exception e) {
-            log.error("Failed to get recommendation: {}", e.getMessage());
-        }
+        CompletableFuture<BookRecommendationDto> recommendationFuture =
+                recommendationService.getRecommendation(id);
 
+        recommendationFuture.whenComplete((recommendation, ex) -> {
+            if (ex != null) {
+                log.error("Failed to get recommendation: {}", ex.getMessage());
+            } else {
+                log.info("Got recommendation: {}", recommendation);
+            }
+        });
+        // Рекомендация только логируется.
+        // При наличии соответствующего поля в BookDto можно его присваивать.
         return book;
     }
 
     @PostMapping("/api/v1/book")
     public ResponseEntity<BookDto> createBook(@Valid @RequestBody BookCreateDto bookCreateDto) {
         var created = bookService.insert(bookCreateDto);
-        return ResponseEntity.created(URI.create("/api/books/" + created.id()))
+        return ResponseEntity.created(URI.create("/api/v1/book/" + created.id()))
                 .body(created);
     }
 
